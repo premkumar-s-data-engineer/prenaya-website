@@ -37,10 +37,79 @@
             <div class="field-error">Please enter a valid 10-digit mobile number.</div>
           </div>
 
+          <h3 class="form-section-title">Delivery Address</h3>
+
           <div class="form-group">
-            <label for="customer-address">Delivery Address *</label>
-            <textarea id="customer-address" name="customerAddress" required autocomplete="street-address" placeholder="Full address including city and pincode" rows="3"></textarea>
-            <div class="field-error">Please enter your delivery address.</div>
+            <label for="addr-house">House / Flat No. *</label>
+            <input type="text" id="addr-house" required placeholder="e.g. 42, Flat 3B">
+            <div class="field-error">Please enter house / flat number.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="addr-street">Street / Area *</label>
+            <input type="text" id="addr-street" required placeholder="e.g. MG Road, Koramangala">
+            <div class="field-error">Please enter street / area.</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="addr-city">City *</label>
+              <input type="text" id="addr-city" required placeholder="e.g. Bengaluru">
+              <div class="field-error">Please enter city.</div>
+            </div>
+            <div class="form-group">
+              <label for="addr-state">State *</label>
+              <select id="addr-state" required>
+                <option value="">Select State / UT</option>
+                <optgroup label="States">
+                  <option value="Andhra Pradesh">Andhra Pradesh</option>
+                  <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                  <option value="Assam">Assam</option>
+                  <option value="Bihar">Bihar</option>
+                  <option value="Chhattisgarh">Chhattisgarh</option>
+                  <option value="Goa">Goa</option>
+                  <option value="Gujarat">Gujarat</option>
+                  <option value="Haryana">Haryana</option>
+                  <option value="Himachal Pradesh">Himachal Pradesh</option>
+                  <option value="Jharkhand">Jharkhand</option>
+                  <option value="Karnataka">Karnataka</option>
+                  <option value="Kerala">Kerala</option>
+                  <option value="Madhya Pradesh">Madhya Pradesh</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="Manipur">Manipur</option>
+                  <option value="Meghalaya">Meghalaya</option>
+                  <option value="Mizoram">Mizoram</option>
+                  <option value="Nagaland">Nagaland</option>
+                  <option value="Odisha">Odisha</option>
+                  <option value="Punjab">Punjab</option>
+                  <option value="Rajasthan">Rajasthan</option>
+                  <option value="Sikkim">Sikkim</option>
+                  <option value="Tamil Nadu">Tamil Nadu</option>
+                  <option value="Telangana">Telangana</option>
+                  <option value="Tripura">Tripura</option>
+                  <option value="Uttar Pradesh">Uttar Pradesh</option>
+                  <option value="Uttarakhand">Uttarakhand</option>
+                  <option value="West Bengal">West Bengal</option>
+                </optgroup>
+                <optgroup label="Union Territories">
+                  <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                  <option value="Chandigarh">Chandigarh</option>
+                  <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                  <option value="Delhi">Delhi</option>
+                  <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                  <option value="Ladakh">Ladakh</option>
+                  <option value="Lakshadweep">Lakshadweep</option>
+                  <option value="Puducherry">Puducherry</option>
+                </optgroup>
+              </select>
+              <div class="field-error">Please select state.</div>
+            </div>
+          </div>
+
+          <div class="form-group" style="max-width: 200px;">
+            <label for="addr-pincode">Pincode *</label>
+            <input type="text" id="addr-pincode" required placeholder="e.g. 560001" maxlength="6" inputmode="numeric" pattern="[0-9]{6}">
+            <div class="field-error">Please enter a valid 6-digit pincode.</div>
           </div>
 
           <div class="form-group">

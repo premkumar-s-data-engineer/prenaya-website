@@ -204,6 +204,7 @@ function renderProductDetail(product, images) {
 
   // Price
   var priceHtml = '<div class="product-price-wrap" id="product-price-wrap">' + renderPriceHtml(displayPrice, displayCompareAt) + '</div>';
+  var shippingNoteHtml = '<p class="shipping-note">Shipping charges will be calculated at checkout</p>';
 
   // Add to basket button
   var buttonHtml = isAvailable
@@ -220,6 +221,7 @@ function renderProductDetail(product, images) {
         ${metaHtml}
         ${stockHtml}
         ${priceHtml}
+        ${shippingNoteHtml}
         ${variantHtml}
         <div class="product-description">${escapeHtml(product.description || '')}</div>
         ${includesHtml}

@@ -150,7 +150,7 @@ function renderProductCard(product) {
 }
 
 function attachAddToCartButtons(container) {
-  container.querySelectorAll('.btn-add-cart').forEach(function (btn) {
+  container.querySelectorAll('button.btn-add-cart').forEach(function (btn) {
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       addToBasket({

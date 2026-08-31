@@ -29,9 +29,17 @@ var BASKET_KEY = 'prenaya_basket';
 function getBasket() {
   try {
     var data = localStorage.getItem(BASKET_KEY);
-    return data ? JSON.parse(data) : [];
+    var items = data ? JSON.parse(data) : [];
+    // Filter out corrupted items (null productId or name)
+    var clean = items.filter(function (item) {
+      return item && item.productId && item.name && item.price;
+    });
+    // If we removed bad items, save the cleaned version
+    if (clean.length !== items.length) {
+      saveBasket(clean);
+    }
+    return clean;
   } catch (e) {
-    // Corrupted data — reset
     localStorage.removeItem(BASKET_KEY);
     return [];
   }

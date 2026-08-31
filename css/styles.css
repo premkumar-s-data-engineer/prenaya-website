@@ -322,12 +322,12 @@ ul, ol { list-style: none; }
    ============================================================ */
 .hero {
   background: linear-gradient(135deg, #FFE8D6 0%, var(--color-pink-soft) 40%, #E8F8F0 100%);
-  padding: var(--space-2xl) var(--space-lg);
+  padding: var(--space-lg) var(--space-md);
   border-radius: var(--radius-xl);
   margin-bottom: var(--space-2xl);
   position: relative;
   overflow: hidden;
-  min-height: 260px;
+  min-height: 180px;
   display: flex;
   align-items: center;
   gap: var(--space-lg);
@@ -450,7 +450,7 @@ ul, ol { list-style: none; }
 
 .hero h1 {
   font-family: var(--font-heading);
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: 900;
   color: var(--color-plum);
   line-height: 1.15;
@@ -1095,8 +1095,26 @@ ul, ol { list-style: none; }
 .form-group .field-hint { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-xs); }
 .form-group .field-error { font-size: var(--font-size-xs); color: var(--color-error); margin-top: var(--space-xs); display: none; }
 .form-group.has-error input,
-.form-group.has-error textarea { border-color: var(--color-error); }
+.form-group.has-error textarea,
+.form-group.has-error select { border-color: var(--color-error); }
 .form-group.has-error .field-error { display: block; }
+
+.form-section-title {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-plum);
+  margin-bottom: var(--space-md);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.shipping-note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
 
 .checkout-summary {
   background: var(--color-pink-bg);
@@ -1124,6 +1142,14 @@ ul, ol { list-style: none; }
   padding-top: var(--space-sm);
   border-top: 1px solid var(--color-border);
   color: var(--color-plum);
+}
+
+.checkout-summary-shipping {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-top: var(--space-sm);
+  text-align: right;
 }
 
 .confirmation-screen { text-align: center; padding: var(--space-2xl) var(--space-md); }
@@ -1301,10 +1327,7 @@ ul, ol { list-style: none; }
 }
 
 .variant-option-label {
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--color-text);
-  margin-bottom: var(--space-sm);
+  display: none;
 }
 
 .variant-option-values {
