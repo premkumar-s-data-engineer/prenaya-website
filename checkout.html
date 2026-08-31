@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — Prenaya</title>
+  <meta name="description" content="Complete your Prenaya order via WhatsApp.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="site-header" id="site-header"></header>
+
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Screen 1: Checkout Form -->
+      <div id="checkout-form-screen">
+        <h1 class="section-title mb-lg">Checkout</h1>
+
+        <div class="checkout-summary" id="checkout-summary"></div>
+
+        <form class="checkout-form" id="checkout-form" novalidate>
+          <div class="form-group">
+            <label for="customer-name">Your Name *</label>
+            <input type="text" id="customer-name" name="customerName" required autocomplete="name" placeholder="e.g. Priya Sharma">
+            <div class="field-error">Please enter your name.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="customer-phone">WhatsApp / Mobile Number *</label>
+            <input type="tel" id="customer-phone" name="customerPhone" required autocomplete="tel" placeholder="e.g. 9876543210" maxlength="10" inputmode="numeric">
+            <div class="field-hint">10-digit Indian mobile number</div>
+            <div class="field-error">Please enter a valid 10-digit mobile number.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="customer-address">Delivery Address *</label>
+            <textarea id="customer-address" name="customerAddress" required autocomplete="street-address" placeholder="Full address including city and pincode" rows="3"></textarea>
+            <div class="field-error">Please enter your delivery address.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="customer-notes">Notes (optional)</label>
+            <textarea id="customer-notes" name="customerNotes" placeholder="Any special requests? e.g. gift wrap" rows="2"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-whatsapp btn-full" id="send-whatsapp-btn">Send Order via WhatsApp</button>
+        </form>
+      </div>
+
+      <!-- Screen 2: Confirmation -->
+      <div id="confirmation-screen" class="confirmation-screen hidden">
+        <h2>Did you send the order on WhatsApp?</h2>
+        <p>We opened WhatsApp with your order details. Please confirm whether you sent the message.</p>
+        <div class="confirmation-actions">
+          <button class="btn btn-primary" id="confirm-yes-btn">Yes, I sent it</button>
+          <button class="btn btn-outline" id="confirm-no-btn">No, go back</button>
+        </div>
+      </div>
+
+      <!-- Screen 3: Success -->
+      <div id="success-screen" class="order-success hidden">
+        <div class="success-icon">&#10004;</div>
+        <h2>Order Sent!</h2>
+        <p>Thank you! We'll confirm your order on WhatsApp shortly.</p>
+        <a href="index.html" class="btn btn-primary">Back to Home</a>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/basket.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/checkout.js"></script>
+</body>
+</html>

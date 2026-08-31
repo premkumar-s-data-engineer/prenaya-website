@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prenaya — DIY Craft Kits for Kids</title>
+  <meta name="description" content="Fun, creative DIY activity kits for children. Explore slime kits, painting sets, and more. Order via WhatsApp!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="site-header" id="site-header"></header>
+
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-deco hero-deco-1"></div>
+        <div class="hero-deco hero-deco-2"></div>
+        <div class="hero-deco hero-deco-3"></div>
+        <div class="hero-deco hero-deco-4"></div>
+        <div class="hero-deco hero-deco-5"></div>
+        <div class="hero-content">
+          <h1>Creative Fun<br><em>for Little Hands</em></h1>
+          <p>DIY activity kits that spark <strong>imagination</strong> and <strong>joy</strong> in every little creator.</p>
+          <a href="catalog.html" class="btn btn-primary btn-hero">Explore Our Kits &rarr;</a>
+
+          <div class="hero-features">
+            <span class="hero-feature"><span class="hero-feature-icon">&#127807;</span> Eco-friendly &amp; non-toxic</span>
+            <span class="hero-feature"><span class="hero-feature-icon">&#127873;</span> Perfect for gifting</span>
+            <span class="hero-feature"><span class="hero-feature-icon">&#10024;</span> Sparks creativity</span>
+            <span class="hero-feature"><span class="hero-feature-icon">&#10084;&#65039;</span> Made with love</span>
+          </div>
+        </div>
+        <div class="hero-image-wrap">
+          <img src="images/site/hero-image.png" alt="Prenaya DIY craft kits for kids" class="hero-image">
+        </div>
+      </section>
+
+      <!-- Categories -->
+      <section>
+        <div class="section-header">
+          <h2 class="section-title" data-deco="&#10024;">Shop by Category</h2>
+          <a href="catalog.html" class="section-link">View All Categories &rarr;</a>
+        </div>
+        <div class="categories-grid" id="categories-grid">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading categories...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Featured Products -->
+      <section>
+        <div class="section-header">
+          <h2 class="section-title" data-deco="&#128149;">Our Favourites</h2>
+          <a href="catalog.html" class="section-link">View All Kits &rarr;</a>
+        </div>
+        <div class="products-grid" id="featured-grid">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading products...</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Trust badges -->
+  <div class="trust-bar" id="trust-bar"></div>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/basket.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>

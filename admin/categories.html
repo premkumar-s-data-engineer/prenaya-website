@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categories — Prenaya Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+
+  <!-- Mobile topbar -->
+  <div class="admin-topbar" id="admin-topbar"></div>
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Main content -->
+  <main class="admin-main">
+
+    <div class="dashboard-toolbar">
+      <h1>Categories</h1>
+    </div>
+
+    <!-- Add category form -->
+    <div class="cat-add-form" id="add-category-form">
+      <div class="cat-add-fields">
+        <input type="text" id="new-category-name" placeholder="Category name, e.g. Slime Kits" autocomplete="off">
+        <div class="cat-add-image-row">
+          <label class="btn btn-outline btn-sm cat-image-pick-btn" id="new-image-label">
+            Choose Image
+            <input type="file" id="new-category-image" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden>
+          </label>
+          <span class="cat-image-filename" id="new-image-filename">No image selected</span>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="add-category-btn">Add Category</button>
+    </div>
+
+    <!-- Category list -->
+    <div id="category-list">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <p>Loading categories...</p>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="js/admin-auth.js"></script>
+  <script src="js/admin-categories.js"></script>
+</body>
+</html>

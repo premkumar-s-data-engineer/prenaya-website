@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product — Prenaya</title>
+  <meta name="description" content="View product details — Prenaya DIY craft kits for kids.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="site-header" id="site-header"></header>
+
+  <main class="main-content">
+    <div class="container">
+
+      <p class="breadcrumb">
+        <a href="index.html">Home</a> &rsaquo;
+        <a href="catalog.html">Shop</a> &rsaquo;
+        <span id="breadcrumb-name">...</span>
+      </p>
+
+      <div id="product-detail">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>Loading product...</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="trust-bar" id="trust-bar"></div>
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/basket.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/product.js"></script>
+</body>
+</html>

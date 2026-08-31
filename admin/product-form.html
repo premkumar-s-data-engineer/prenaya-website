@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product — Prenaya Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+
+  <!-- Mobile topbar -->
+  <div class="admin-topbar" id="admin-topbar"></div>
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar" id="admin-sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Main content -->
+  <main class="admin-main">
+
+    <div class="dashboard-toolbar">
+      <h1 id="form-title">Add Product</h1>
+      <a href="dashboard.html" class="btn btn-outline btn-sm">Back to Products</a>
+    </div>
+
+    <form id="product-form" novalidate>
+
+      <div class="form-group">
+        <label for="product-name">Product Name *</label>
+        <input type="text" id="product-name" required placeholder="e.g. Rainbow Slime Kit">
+      </div>
+
+      <div class="form-group">
+        <label for="product-slug">URL Slug *</label>
+        <input type="text" id="product-slug" required placeholder="e.g. rainbow-slime-kit">
+        <div class="field-hint">Auto-generated from name. Used in the product page URL.</div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="product-category">Category</label>
+          <select id="product-category">
+            <option value="">No category</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="product-price">Selling Price (₹) *</label>
+          <input type="number" id="product-price" required min="0" step="1" placeholder="e.g. 349">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="product-compare-price">Original Price / MRP (₹)</label>
+        <input type="number" id="product-compare-price" min="0" step="1" placeholder="e.g. 499">
+        <div class="field-hint">If set and higher than selling price, shown as strikethrough. Leave empty for no discount display.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="product-description">Description</label>
+        <textarea id="product-description" rows="4" placeholder="Describe the product..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="product-age">Age Range</label>
+          <input type="text" id="product-age" placeholder="e.g. 5+ or 3-8 years">
+        </div>
+        <div class="form-group">
+          <label for="product-order">Display Order</label>
+          <input type="number" id="product-order" min="0" step="1" value="0" placeholder="0">
+          <div class="field-hint">Lower numbers appear first.</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="product-includes">What's Included</label>
+        <textarea id="product-includes" rows="3" placeholder="One item per line, e.g.&#10;Glue bottles&#10;Activator&#10;Glitter pack"></textarea>
+        <div class="field-hint">One item per line.</div>
+      </div>
+
+      <div class="form-row" style="margin-bottom: var(--space-lg);">
+        <div class="form-check">
+          <input type="checkbox" id="product-available" checked>
+          <label for="product-available">In Stock</label>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" id="product-featured">
+          <label for="product-featured">Featured on Home Page</label>
+        </div>
+      </div>
+
+      <!-- ===================== VARIANTS / OPTIONS ===================== -->
+      <div class="form-group">
+        <div class="form-check" style="margin-bottom: var(--space-md);">
+          <input type="checkbox" id="product-has-variants">
+          <label for="product-has-variants">This product has variants (e.g. Type, Colour, Keychain)</label>
+        </div>
+      </div>
+
+      <div id="variants-section" class="hidden">
+
+        <!-- Option Groups Builder -->
+        <div class="form-group">
+          <label>Product Options</label>
+          <div class="field-hint mb-md">
+            Add option groups (e.g. "Type", "Keychain", "Colour") and their values. Each combination becomes a variant with its own price.
+          </div>
+          <div id="option-groups-list"></div>
+          <button type="button" class="btn btn-outline btn-sm" id="add-option-group-btn">+ Add Option</button>
+        </div>
+
+        <!-- Generated Variants Table -->
+        <div class="form-group" id="variants-table-group" style="display:none;">
+          <label>Variant Pricing</label>
+          <div class="field-hint mb-md">
+            Set the price and availability for each combination. The base price above is used for products without variants.
+          </div>
+          <div id="variants-table-wrap">
+            <table class="variants-table" id="variants-table">
+              <thead><tr id="variants-table-head"></tr></thead>
+              <tbody id="variants-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+      <!-- ===================== END VARIANTS ===================== -->
+
+      <div class="form-group">
+        <label>Product Images</label>
+        <div class="field-hint mb-md">
+          JPG, PNG, or WebP. Max 5 MB each. Up to 8 images. First image is the thumbnail. Drag to reorder.
+        </div>
+        <div class="image-previews" id="image-previews"></div>
+        <div class="image-upload-area" id="image-upload-area">
+          <p>Click or drag images here to upload</p>
+          <p class="upload-hint">JPG, PNG, WebP &bull; Max 5 MB &bull; Up to <span id="remaining-slots">8</span> more</p>
+          <input type="file" id="image-input" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" id="save-btn">Save Product</button>
+
+    </form>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="js/admin-auth.js"></script>
+  <script src="js/admin-product.js"></script>
+</body>
+</html>
