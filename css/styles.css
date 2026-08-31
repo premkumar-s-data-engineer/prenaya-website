@@ -501,14 +501,16 @@ ul, ol { list-style: none; }
   position: relative;
   z-index: 1;
   flex-shrink: 0;
+  align-self: stretch;
+  display: none;
 }
 
 .hero-image {
   width: 100%;
-  max-width: 500px;
-  height: auto;
+  max-width: 550px;
+  height: 100%;
   object-fit: contain;
-  mix-blend-mode: screen;
+  margin: -2rem -1rem -2rem 0;
 }
 
 /* ============================================================
@@ -1249,7 +1251,7 @@ ul, ol { list-style: none; }
 
   .hero { padding: var(--space-3xl) var(--space-2xl); min-height: 360px; }
   .hero h1 { font-size: 2.75rem; }
-  .hero-image { max-width: 550px; }
+  .hero-image { max-width: 600px; margin: -3rem -2rem -3rem 0; }
 
   .gallery-swipe { display: none; }
   .gallery-dots { display: none; }
