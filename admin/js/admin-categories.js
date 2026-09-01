@@ -125,23 +125,30 @@ function validateCatImage(file) {
   return null;
 }
 
-function generateCatImagePath(catId, file) {
-  var ext = file.name.split('.').pop().toLowerCase();
-  if (ALLOWED_CAT_EXTS.indexOf(ext) === -1) ext = 'jpg';
+function generateCatImagePath(catId, extension) {
+  var ext = (extension || 'webp').toLowerCase();
+  var allowed = ALLOWED_CAT_EXTS.concat(['webp']);
+  if (allowed.indexOf(ext) === -1) ext = 'webp';
   var ts = Date.now();
   var rand = Math.random().toString(36).substring(2, 7);
   return 'categories/' + catId + '/' + ts + '_' + rand + '.' + ext;
 }
 
 // --------------------
-// Upload category image
+// Upload category image (optimized before upload)
 // --------------------
 async function uploadCatImage(catId, file) {
-  var storagePath = generateCatImagePath(catId, file);
+  // Resize + compress to WebP before upload
+  var optimized = await optimizeImage(file, 1000, 0.82);
+  var storagePath = generateCatImagePath(catId, optimized.extension);
 
   var { error: uploadError } = await supabaseClient.storage
     .from(PRENAYA_CONFIG.storageBucket)
-    .upload(storagePath, file, { cacheControl: '3600', upsert: false });
+    .upload(storagePath, optimized.blob, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: optimized.blob.type || 'image/webp',
+    });
 
   if (uploadError) {
     showAdminToast('Failed to upload image: ' + uploadError.message, 'error');

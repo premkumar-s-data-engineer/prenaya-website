@@ -72,12 +72,80 @@ async function loadProduct(slug) {
     initVariantSelectors();
   }
 
-  // Add to basket button
-  var addBtn = document.getElementById('add-to-basket-btn');
-  if (addBtn) {
-    addBtn.addEventListener('click', function () {
-      handleAddToBasket(product, currentImages);
+  // Render the cart area (Add to Cart button or stepper)
+  refreshCartArea();
+
+  // Wire delegated clicks for the cart area
+  var cartArea = document.getElementById('product-cart-area');
+  if (cartArea) {
+    cartArea.addEventListener('click', function (e) {
+      if (e.target.closest('.pd-add-btn')) {
+        e.preventDefault();
+        handleAddToBasket(currentProduct, currentImages);
+        refreshCartArea();
+      } else if (e.target.closest('.qty-plus')) {
+        e.preventDefault();
+        var key = getCurrentBasketKey();
+        updateQuantity(key, getItemQuantity(key) + 1);
+        updateBasketBadge();
+        refreshCartArea();
+      } else if (e.target.closest('.qty-minus')) {
+        e.preventDefault();
+        var k = getCurrentBasketKey();
+        updateQuantity(k, getItemQuantity(k) - 1);
+        updateBasketBadge();
+        refreshCartArea();
+      }
     });
+  }
+}
+
+// --------------------
+// Compute the basket key for the current product + selected variant
+// --------------------
+function getCurrentBasketKey() {
+  var hasVariants = currentProduct.has_variants && productOptions.length > 0;
+  if (hasVariants) {
+    var matched = findMatchingVariant(selectedOptions);
+    if (matched) {
+      return currentProduct.id + '::' + matched.id;
+    }
+  }
+  return currentProduct.id;
+}
+
+// --------------------
+// Render the Add to Cart button OR quantity stepper based on basket state
+// --------------------
+function refreshCartArea() {
+  var area = document.getElementById('product-cart-area');
+  if (!area) return;
+
+  var hasVariants = currentProduct.has_variants && productOptions.length > 0;
+  var isAvailable = currentProduct.is_available;
+
+  if (hasVariants) {
+    var matched = findMatchingVariant(selectedOptions);
+    isAvailable = matched ? matched.is_available : false;
+  }
+
+  if (!isAvailable) {
+    area.innerHTML = '<button class="btn btn-primary add-to-basket-btn" disabled>Out of Stock</button>';
+    return;
+  }
+
+  var key = getCurrentBasketKey();
+  var qty = getItemQuantity(key);
+
+  if (qty <= 0) {
+    area.innerHTML = '<button type="button" class="btn btn-primary add-to-basket-btn pd-add-btn">Add to Cart</button>';
+  } else {
+    area.innerHTML =
+      '<div class="qty-stepper qty-stepper-lg">' +
+        '<button type="button" class="qty-step qty-minus" aria-label="Decrease quantity">&minus;</button>' +
+        '<span class="qty-step-value">' + qty + '</span>' +
+        '<button type="button" class="qty-step qty-plus" aria-label="Increase quantity">+</button>' +
+      '</div>';
   }
 }
 
@@ -206,10 +274,11 @@ function renderProductDetail(product, images) {
   var priceHtml = '<div class="product-price-wrap" id="product-price-wrap">' + renderPriceHtml(displayPrice, displayCompareAt) + '</div>';
   var shippingNoteHtml = '<p class="shipping-note">Shipping charges will be calculated at checkout</p>';
 
-  // Add to basket button
-  var buttonHtml = isAvailable
-    ? '<button class="btn btn-primary add-to-basket-btn" id="add-to-basket-btn">Add to Basket</button>'
-    : '<button class="btn btn-primary add-to-basket-btn" id="add-to-basket-btn" disabled>Out of Stock</button>';
+  // Add to cart area — filled by refreshCartArea() after render
+  var cartAreaHtml = '<div class="product-cart-area" id="product-cart-area"></div>';
+
+  // Bulk orders note
+  var bulkNoteHtml = '<p class="bulk-note">For Bulk Orders, please contact us.</p>';
 
   return `
     <div class="product-detail">
@@ -225,7 +294,8 @@ function renderProductDetail(product, images) {
         ${variantHtml}
         <div class="product-description">${escapeHtml(product.description || '')}</div>
         ${includesHtml}
-        ${buttonHtml}
+        ${cartAreaHtml}
+        ${bulkNoteHtml}
       </div>
     </div>
   `;
@@ -265,7 +335,6 @@ function updateVariantDisplay() {
 
   var priceWrap = document.getElementById('product-price-wrap');
   var stockEl = document.getElementById('stock-badge');
-  var addBtn = document.getElementById('add-to-basket-btn');
 
   if (matchedVariant) {
     priceWrap.innerHTML = renderPriceHtml(matchedVariant.price, matchedVariant.compare_at_price);
@@ -273,22 +342,18 @@ function updateVariantDisplay() {
     if (matchedVariant.is_available) {
       stockEl.className = 'stock-badge available';
       stockEl.textContent = 'In Stock';
-      addBtn.disabled = false;
-      addBtn.textContent = 'Add to Basket';
     } else {
       stockEl.className = 'stock-badge out-of-stock';
       stockEl.textContent = 'Out of Stock';
-      addBtn.disabled = true;
-      addBtn.textContent = 'Out of Stock';
     }
   } else {
-    // No matching variant found — show base price, mark unavailable
     priceWrap.innerHTML = renderPriceHtml(currentProduct.price, currentProduct.compare_at_price);
     stockEl.className = 'stock-badge out-of-stock';
     stockEl.textContent = 'Unavailable';
-    addBtn.disabled = true;
-    addBtn.textContent = 'Unavailable';
   }
+
+  // Update the cart area to reflect the newly selected variant's basket state
+  refreshCartArea();
 }
 
 function findMatchingVariant(selection) {
@@ -337,21 +402,22 @@ function renderGallery(images) {
 
   var firstUrl = getImageUrl(images[0].image_path);
 
-  // Desktop: main image + thumbnail strip
-  var mainImg = `<img src="${firstUrl}" alt="Product image" class="gallery-main" id="gallery-main">`;
+  // Desktop: main image + thumbnail strip (main loads eagerly — above the fold)
+  var mainImg = `<img src="${firstUrl}" alt="Product image" class="gallery-main" id="gallery-main" decoding="async">`;
 
   var thumbs = '<div class="gallery-thumbs" id="gallery-thumbs">';
   images.forEach(function (img, index) {
     var url = getImageUrl(img.image_path);
-    thumbs += `<img src="${url}" alt="Product image ${index + 1}" class="gallery-thumb ${index === 0 ? 'active' : ''}" data-index="${index}" loading="lazy">`;
+    thumbs += `<img src="${url}" alt="Product image ${index + 1}" class="gallery-thumb ${index === 0 ? 'active' : ''}" data-index="${index}" loading="lazy" decoding="async">`;
   });
   thumbs += '</div>';
 
-  // Mobile: horizontal swipe
+  // Mobile: horizontal swipe (first eager, rest lazy)
   var swipe = '<div class="gallery-swipe" id="gallery-swipe">';
   images.forEach(function (img, index) {
     var url = getImageUrl(img.image_path);
-    swipe += `<img src="${url}" alt="Product image ${index + 1}" loading="lazy">`;
+    var loadAttr = index === 0 ? '' : ' loading="lazy"';
+    swipe += `<img src="${url}" alt="Product image ${index + 1}"${loadAttr} decoding="async">`;
   });
   swipe += '</div>';
 

@@ -854,12 +854,15 @@ ul, ol { list-style: none; }
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-lg);
+  width: 100%;
+  max-height: 340px;
+  aspect-ratio: 1;
 }
 
 .gallery-swipe img {
   width: 100%;
-  flex-shrink: 0;
-  aspect-ratio: 1;
+  height: 100%;
+  flex: 0 0 100%;
   object-fit: cover;
   scroll-snap-align: center;
 }
@@ -943,6 +946,79 @@ ul, ol { list-style: none; }
   padding: var(--space-md);
   font-size: var(--font-size-lg);
   border-radius: var(--radius);
+}
+
+/* ============================================================
+   QUANTITY STEPPER (product cards + product detail)
+   ============================================================ */
+.qty-control {
+  width: 100%;
+}
+
+.qty-control .btn-add-cart {
+  width: 100%;
+}
+
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-coral);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: 100%;
+  box-shadow: 0 2px 6px rgba(255, 107, 107, 0.25);
+}
+
+.qty-step {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
+  transition: background var(--transition);
+}
+
+.qty-step:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.qty-step-value {
+  flex: 1;
+  text-align: center;
+  color: white;
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+}
+
+/* Large stepper for product detail page */
+.product-cart-area { width: 100%; }
+
+.qty-stepper-lg {
+  background: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(217, 79, 122, 0.25);
+}
+
+.qty-stepper-lg .qty-step {
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+}
+
+.qty-stepper-lg .qty-step-value {
+  font-size: var(--font-size-lg);
+}
+
+/* Bulk orders note on product detail */
+.bulk-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  text-align: center;
+  margin-top: var(--space-md);
 }
 
 /* ============================================================
@@ -1217,29 +1293,47 @@ ul, ol { list-style: none; }
 /* ============================================================
    FLOATING WHATSAPP BUTTON
    ============================================================ */
-.whatsapp-fab {
+.fab-group {
   position: fixed;
   bottom: 24px;
   right: 24px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.fab {
   width: 56px;
   height: 56px;
-  background: #25D366;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
-  z-index: 90;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.whatsapp-fab:hover {
-  transform: scale(1.1);
+.fab svg { pointer-events: none; }
+
+.fab:hover { transform: scale(1.1); }
+
+.fab-whatsapp {
+  background: #25D366;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
+}
+
+.fab-whatsapp:hover {
   box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
 }
 
-.whatsapp-fab svg {
-  pointer-events: none;
+.fab-instagram {
+  background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  box-shadow: 0 4px 14px rgba(220, 39, 67, 0.35);
+}
+
+.fab-instagram:hover {
+  box-shadow: 0 6px 20px rgba(220, 39, 67, 0.45);
 }
 
 /* ============================================================

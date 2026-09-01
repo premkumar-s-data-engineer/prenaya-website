@@ -36,7 +36,7 @@ async function loadCategories() {
     var imgSrc = cat.image_path ? getImageUrl(cat.image_path) : getCategoryPlaceholder();
     return `
       <a href="catalog.html?category=${encodeURIComponent(cat.slug)}" class="category-card">
-        <img src="${imgSrc}" alt="${escapeHtml(cat.name)}" class="category-card-image" loading="lazy">
+        <img src="${imgSrc}" alt="${escapeHtml(cat.name)}" class="category-card-image" loading="lazy" decoding="async" width="190" height="190">
         <div class="category-card-body">
           <div class="category-card-name">${escapeHtml(cat.name)}</div>
         </div>
@@ -76,8 +76,8 @@ async function loadFeaturedProducts() {
     return renderProductCard(product);
   }).join('');
 
-  // Attach Add to Cart buttons
-  attachAddToCartButtons(grid);
+  // Render qty steppers and wire up clicks
+  setupQtyControls(grid);
 }
 
 // --------------------
@@ -99,12 +99,14 @@ function renderProductCard(product) {
     priceHtml = '<p class="product-card-price">' + formatPrice(product.price) + '</p>';
   }
 
-  // Button: variant products link to product page, others add to cart directly
-  var buttonHtml;
+  // Footer action: variant products link to product page; simple products get a qty stepper
+  var footerHtml;
   if (hasVariants) {
-    buttonHtml = '<a href="product.html?id=' + encodeURIComponent(product.slug) + '" class="btn btn-add-cart">View Options</a>';
+    footerHtml = '<a href="product.html?id=' + encodeURIComponent(product.slug) + '" class="btn btn-add-cart">View Options</a>';
   } else {
-    buttonHtml = '<button class="btn btn-add-cart" data-slug="' + escapeHtml(product.slug) + '" data-id="' + product.id + '" data-name="' + escapeHtml(product.name) + '" data-price="' + product.price + '" data-image="' + thumbnail + '">Add to Cart</button>';
+    var compareAttr = (product.compare_at_price && product.compare_at_price > product.price)
+      ? ' data-compare-at="' + product.compare_at_price + '"' : '';
+    footerHtml = '<div class="qty-control" data-id="' + product.id + '" data-slug="' + escapeAttr(product.slug) + '" data-name="' + escapeAttr(product.name) + '" data-price="' + product.price + '" data-image="' + escapeAttr(thumbnail) + '"' + compareAttr + '></div>';
   }
 
   return `
@@ -112,7 +114,7 @@ function renderProductCard(product) {
       <a href="product.html?id=${encodeURIComponent(product.slug)}">
         <div class="product-card-image-wrap">
           ${product.is_featured ? '<span class="product-card-badge">Popular</span>' : ''}
-          <img src="${thumbnail}" alt="${escapeHtml(product.name)}" class="product-card-image" loading="lazy">
+          <img src="${thumbnail}" alt="${escapeHtml(product.name)}" class="product-card-image" loading="lazy" decoding="async" width="300" height="300">
         </div>
       </a>
       <div class="product-card-body">
@@ -123,30 +125,20 @@ function renderProductCard(product) {
         ${priceHtml}
       </div>
       <div class="product-card-footer">
-        ${buttonHtml}
+        ${footerHtml}
       </div>
     </div>
   `;
 }
 
 // --------------------
-// Add to Cart from product cards
+// Render all qty steppers + wire up delegated clicks
 // --------------------
-function attachAddToCartButtons(container) {
-  container.querySelectorAll('button.btn-add-cart').forEach(function (btn) {
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      addToBasket({
-        productId: btn.getAttribute('data-id'),
-        slug: btn.getAttribute('data-slug'),
-        name: btn.getAttribute('data-name'),
-        price: parseInt(btn.getAttribute('data-price'), 10),
-        image: btn.getAttribute('data-image'),
-      });
-      updateBasketBadge();
-      showToast(btn.getAttribute('data-name') + ' added to basket!', 'success');
-    });
+function setupQtyControls(container) {
+  container.querySelectorAll('.qty-control').forEach(function (wrapper) {
+    renderQtyControl(wrapper);
   });
+  initQtyControls(container);
 }
 
 // --------------------
@@ -174,6 +166,10 @@ function escapeHtml(text) {
   var div = document.createElement('div');
   div.appendChild(document.createTextNode(text || ''));
   return div.innerHTML;
+}
+
+function escapeAttr(text) {
+  return (text || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // --------------------

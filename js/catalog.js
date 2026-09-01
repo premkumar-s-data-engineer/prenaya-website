@@ -101,7 +101,7 @@ function renderProducts() {
     return renderProductCard(product);
   }).join('');
 
-  attachAddToCartButtons(grid);
+  setupQtyControls(grid);
 }
 
 function renderProductCard(product) {
@@ -120,19 +120,21 @@ function renderProductCard(product) {
     priceHtml = '<p class="product-card-price">' + formatPrice(product.price) + '</p>';
   }
 
-  // Button: variant products link to product page, others add to cart directly
-  var buttonHtml;
+  // Footer: variant products link to product page; simple products get a qty stepper
+  var footerHtml;
   if (hasVariants) {
-    buttonHtml = '<a href="product.html?id=' + encodeURIComponent(product.slug) + '" class="btn btn-add-cart">View Options</a>';
+    footerHtml = '<a href="product.html?id=' + encodeURIComponent(product.slug) + '" class="btn btn-add-cart">View Options</a>';
   } else {
-    buttonHtml = '<button class="btn btn-add-cart" data-slug="' + escapeHtml(product.slug) + '" data-id="' + product.id + '" data-name="' + escapeHtml(product.name) + '" data-price="' + product.price + '" data-image="' + thumbnail + '">Add to Cart</button>';
+    var compareAttr = (product.compare_at_price && product.compare_at_price > product.price)
+      ? ' data-compare-at="' + product.compare_at_price + '"' : '';
+    footerHtml = '<div class="qty-control" data-id="' + product.id + '" data-slug="' + escapeAttr(product.slug) + '" data-name="' + escapeAttr(product.name) + '" data-price="' + product.price + '" data-image="' + escapeAttr(thumbnail) + '"' + compareAttr + '></div>';
   }
 
   return `
     <div class="product-card" data-product-id="${product.id}">
       <a href="product.html?id=${encodeURIComponent(product.slug)}">
         <div class="product-card-image-wrap">
-          <img src="${thumbnail}" alt="${escapeHtml(product.name)}" class="product-card-image" loading="lazy">
+          <img src="${thumbnail}" alt="${escapeHtml(product.name)}" class="product-card-image" loading="lazy" decoding="async" width="300" height="300">
         </div>
       </a>
       <div class="product-card-body">
@@ -143,27 +145,17 @@ function renderProductCard(product) {
         ${priceHtml}
       </div>
       <div class="product-card-footer">
-        ${buttonHtml}
+        ${footerHtml}
       </div>
     </div>
   `;
 }
 
-function attachAddToCartButtons(container) {
-  container.querySelectorAll('button.btn-add-cart').forEach(function (btn) {
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      addToBasket({
-        productId: btn.getAttribute('data-id'),
-        slug: btn.getAttribute('data-slug'),
-        name: btn.getAttribute('data-name'),
-        price: parseInt(btn.getAttribute('data-price'), 10),
-        image: btn.getAttribute('data-image'),
-      });
-      updateBasketBadge();
-      showToast(btn.getAttribute('data-name') + ' added to basket!', 'success');
-    });
+function setupQtyControls(container) {
+  container.querySelectorAll('.qty-control').forEach(function (wrapper) {
+    renderQtyControl(wrapper);
   });
+  initQtyControls(container);
 }
 
 function getProductThumbnail(product) {

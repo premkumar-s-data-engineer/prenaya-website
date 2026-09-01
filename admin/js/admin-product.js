@@ -1021,15 +1021,19 @@ async function uploadNewImages(productId) {
   for (var i = 0; i < newFiles.length; i++) {
     var file = newFiles[i].file;
 
-    // Generate safe storage path
-    var storagePath = generateImagePath(productId, file);
+    // Optimize (resize + compress to WebP) before upload — faster loading, smaller storage
+    var optimized = await optimizeImage(file, 1200, 0.82);
+
+    // Generate safe storage path using the optimized extension
+    var storagePath = generateImagePath(productId, optimized.extension);
 
     // Upload to Supabase Storage
     var { error: uploadError } = await supabaseClient.storage
       .from(PRENAYA_CONFIG.storageBucket)
-      .upload(storagePath, file, {
+      .upload(storagePath, optimized.blob, {
         cacheControl: '3600',
         upsert: false,
+        contentType: optimized.blob.type || 'image/webp',
       });
 
     if (uploadError) {
@@ -1057,12 +1061,14 @@ async function uploadNewImages(productId) {
 /**
  * Generate a safe storage path. Never uses the original filename.
  * Format: {productId}/{timestamp}_{randomId}.{extension}
+ * @param {string} productId
+ * @param {string} extension - file extension (from optimizeImage)
  */
-function generateImagePath(productId, file) {
-  var ext = file.name.split('.').pop().toLowerCase();
-  // Ensure the extension is one of the allowed ones
-  if (PRENAYA_CONFIG.allowedImageExtensions.indexOf(ext) === -1) {
-    ext = 'jpg'; // Fallback
+function generateImagePath(productId, extension) {
+  var ext = (extension || 'webp').toLowerCase();
+  var allowed = PRENAYA_CONFIG.allowedImageExtensions.concat(['webp']);
+  if (allowed.indexOf(ext) === -1) {
+    ext = 'webp';
   }
   var timestamp = Date.now();
   var randomId = Math.random().toString(36).substring(2, 7);

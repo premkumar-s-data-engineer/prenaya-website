@@ -190,3 +190,27 @@ function isInBasket(productId) {
   }
   return false;
 }
+
+/**
+ * Get the quantity of a specific basket item by its key.
+ * @param {string} basketKey - productId or productId::variantId
+ * @returns {number} quantity (0 if not in basket)
+ */
+function getItemQuantity(basketKey) {
+  var items = getBasket();
+  for (var i = 0; i < items.length; i++) {
+    if (getBasketItemKey(items[i]) === basketKey) {
+      return items[i].quantity;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Get the quantity of a simple (non-variant) product by productId.
+ * @param {string} productId
+ * @returns {number}
+ */
+function getProductQuantity(productId) {
+  return getItemQuantity(productId);
+}
