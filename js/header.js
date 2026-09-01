@@ -156,6 +156,38 @@ document.addEventListener('DOMContentLoaded', function () {
   renderWhatsAppFab();
 });
 
+// ------------------------------------------------------------
+// Re-sync UI with the basket when the page is shown.
+// When the user navigates with the browser Back/Forward buttons, browsers
+// often restore a frozen snapshot from the bfcache (back/forward cache)
+// WITHOUT re-running our scripts. That leaves the basket badge and any
+// "Add to Cart" / quantity steppers showing stale values (e.g. an item you
+// removed still appearing in the cart). Listening for `pageshow` lets us
+// refresh those bits from localStorage on restore.
+//
+// This is display-only: it re-reads localStorage and repaints the badge and
+// any .qty-control steppers. It does NOT rebind click listeners, so it cannot
+// reintroduce the duplicate-listener problem. Pages with their own custom
+// controls (e.g. the product detail page, the basket page) add their own
+// pageshow handling on top of this.
+// ------------------------------------------------------------
+window.addEventListener('pageshow', function (e) {
+  // On a normal load, DOMContentLoaded already rendered everything. We only
+  // need to force a re-sync when the page came back from the bfcache.
+  if (!e.persisted) return;
+
+  if (typeof updateBasketBadge === 'function') {
+    updateBasketBadge();
+  }
+
+  // Repaint any product-card quantity controls from current basket state.
+  if (typeof renderQtyControl === 'function') {
+    document.querySelectorAll('.qty-control').forEach(function (wrapper) {
+      renderQtyControl(wrapper);
+    });
+  }
+});
+
 
 // ============================================================
 // Shared Quantity Stepper (used on product cards + detail page)

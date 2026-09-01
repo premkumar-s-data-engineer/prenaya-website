@@ -16,6 +16,15 @@ document.addEventListener('DOMContentLoaded', function () {
   renderBasketPage();
 });
 
+// Re-render the basket if the page is restored from the browser's
+// back/forward cache, so it reflects any changes made elsewhere. The click
+// listener is bound once (guarded by basketEventsBound), so re-rendering here
+// does not stack duplicate listeners.
+window.addEventListener('pageshow', function (e) {
+  if (!e.persisted) return;
+  renderBasketPage();
+});
+
 /**
  * Render the full basket page content.
  */

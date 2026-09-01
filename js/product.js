@@ -28,6 +28,18 @@ document.addEventListener('DOMContentLoaded', function () {
   loadProduct(slug);
 });
 
+// When this page is restored from the browser's back/forward cache, its
+// scripts are NOT re-run, so the cart area can show a stale state (e.g. still
+// showing a quantity stepper for an item that was removed on the basket page).
+// Re-sync the cart area from localStorage on bfcache restore. currentProduct
+// is still populated from the preserved page state, so this is safe.
+window.addEventListener('pageshow', function (e) {
+  if (!e.persisted) return;
+  if (currentProduct) {
+    refreshCartArea();
+  }
+});
+
 // --------------------
 // Fetch single product by slug
 // --------------------
