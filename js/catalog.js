@@ -151,11 +151,20 @@ function renderProductCard(product) {
   `;
 }
 
+var qtyControlsBound = false;
+
 function setupQtyControls(container) {
   container.querySelectorAll('.qty-control').forEach(function (wrapper) {
     renderQtyControl(wrapper);
   });
-  initQtyControls(container);
+  // Bind the delegated click handler only once. renderProducts() (and hence
+  // setupQtyControls) runs again on every category filter change; re-binding
+  // each time stacked duplicate listeners, making a single click add/remove
+  // multiple times.
+  if (!qtyControlsBound) {
+    initQtyControls(container);
+    qtyControlsBound = true;
+  }
 }
 
 function getProductThumbnail(product) {

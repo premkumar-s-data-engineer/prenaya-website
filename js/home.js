@@ -134,11 +134,18 @@ function renderProductCard(product) {
 // --------------------
 // Render all qty steppers + wire up delegated clicks
 // --------------------
+var qtyControlsBound = false;
+
 function setupQtyControls(container) {
   container.querySelectorAll('.qty-control').forEach(function (wrapper) {
     renderQtyControl(wrapper);
   });
-  initQtyControls(container);
+  // Bind the delegated click handler only once to avoid stacking duplicate
+  // listeners if the grid is ever re-rendered.
+  if (!qtyControlsBound) {
+    initQtyControls(container);
+    qtyControlsBound = true;
+  }
 }
 
 // --------------------

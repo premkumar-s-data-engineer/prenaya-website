@@ -75,29 +75,68 @@ async function loadProduct(slug) {
   // Render the cart area (Add to Cart button or stepper)
   refreshCartArea();
 
-  // Wire delegated clicks for the cart area
+  // Wire delegated clicks for the cart area.
+  // NOTE: we bind ONCE here. Handlers update state, then sync the UI via
+  // syncCartArea() which only rebuilds the control when the control *type*
+  // changes (Add button <-> stepper). This avoids destroying and recreating
+  // the button under the user's finger on every click, which on touch devices
+  // caused "ghost clicks" to register as extra increments/decrements.
   var cartArea = document.getElementById('product-cart-area');
   if (cartArea) {
     cartArea.addEventListener('click', function (e) {
-      if (e.target.closest('.pd-add-btn')) {
-        e.preventDefault();
+      var addBtn = e.target.closest('.pd-add-btn');
+      var plusBtn = e.target.closest('.qty-plus');
+      var minusBtn = e.target.closest('.qty-minus');
+
+      if (!addBtn && !plusBtn && !minusBtn) return;
+      e.preventDefault();
+
+      var key = getCurrentBasketKey();
+
+      if (addBtn) {
         handleAddToBasket(currentProduct, currentImages);
-        refreshCartArea();
-      } else if (e.target.closest('.qty-plus')) {
-        e.preventDefault();
-        var key = getCurrentBasketKey();
+      } else if (plusBtn) {
         updateQuantity(key, getItemQuantity(key) + 1);
-        updateBasketBadge();
-        refreshCartArea();
-      } else if (e.target.closest('.qty-minus')) {
-        e.preventDefault();
-        var k = getCurrentBasketKey();
-        updateQuantity(k, getItemQuantity(k) - 1);
-        updateBasketBadge();
-        refreshCartArea();
+      } else if (minusBtn) {
+        updateQuantity(key, getItemQuantity(key) - 1);
       }
+
+      updateBasketBadge();
+      syncCartArea();
     });
   }
+}
+
+// --------------------
+// Sync the cart area UI with the current basket state.
+// If only the quantity changed (still a stepper, still an add button), we
+// update in place without touching the clicked element. We only rebuild the
+// whole control when it needs to switch between "Add to Cart" and the stepper.
+// --------------------
+function syncCartArea() {
+  var area = document.getElementById('product-cart-area');
+  if (!area) return;
+
+  var isAvailable = currentProduct.is_available;
+  var hasVariants = currentProduct.has_variants && productOptions.length > 0;
+  if (hasVariants) {
+    var matched = findMatchingVariant(selectedOptions);
+    isAvailable = matched ? matched.is_available : false;
+  }
+
+  var qty = isAvailable ? getItemQuantity(getCurrentBasketKey()) : 0;
+  var stepper = area.querySelector('.qty-stepper');
+
+  // In-place update: stepper is showing and we still have a positive qty.
+  if (isAvailable && qty > 0 && stepper) {
+    var valueEl = stepper.querySelector('.qty-step-value');
+    if (valueEl) valueEl.textContent = qty;
+    return;
+  }
+
+  // Otherwise the control type changed (added first item / removed last item /
+  // availability changed) — do a full rebuild.
+  refreshCartArea();
 }
 
 // --------------------

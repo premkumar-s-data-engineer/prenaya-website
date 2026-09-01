@@ -6,7 +6,13 @@
 // Requires: supabase-config.js, basket.js, header.js
 // ============================================================
 
+// Guard so the delegated click listener is only ever bound once, no matter how
+// many times the basket re-renders. Binding it on every render was causing each
+// click to fire multiple times (quantity jumping by 2, 3, ... per click).
+var basketEventsBound = false;
+
 document.addEventListener('DOMContentLoaded', function () {
+  attachBasketEvents();
   renderBasketPage();
 });
 
@@ -46,9 +52,6 @@ function renderBasketPage() {
   `;
 
   container.innerHTML = itemsHtml + summaryHtml;
-
-  // Attach event listeners
-  attachBasketEvents();
 }
 
 /**
@@ -103,7 +106,10 @@ function renderBasketItem(item) {
  * Attach click handlers for quantity buttons and remove buttons.
  */
 function attachBasketEvents() {
+  if (basketEventsBound) return;
   var container = document.getElementById('basket-content');
+  if (!container) return;
+  basketEventsBound = true;
 
   container.addEventListener('click', function (e) {
     var basketItem = e.target.closest('.basket-item');
