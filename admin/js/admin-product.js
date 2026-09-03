@@ -367,6 +367,11 @@ function renderImagePreviews() {
     var badge = isPrimary ? '<span class="image-preview-badge">Thumbnail</span>' : '';
     var orderLabel = '<span class="image-preview-order">' + (displayIndex + 1) + '</span>';
 
+    // "Set as thumbnail" button on every non-primary image. Clicking it moves
+    // that image to position 1 (the thumbnail) without needing to drag.
+    var thumbBtn = isPrimary ? '' :
+      '<button type="button" class="image-preview-thumb-btn" data-action="set-thumbnail" data-display-index="' + displayIndex + '" title="Set as thumbnail">Set as thumbnail</button>';
+
     var removeAttr = '';
     if (img.type === 'existing') {
       removeAttr = 'data-action="remove-existing" data-image-id="' + img.id + '"';
@@ -379,6 +384,7 @@ function renderImagePreviews() {
         <img src="${img.url}" alt="Product image ${displayIndex + 1}">
         ${badge}
         ${orderLabel}
+        ${thumbBtn}
         <button type="button" class="image-preview-remove" ${removeAttr} title="Remove image">&times;</button>
       </div>
     `;
@@ -424,8 +430,70 @@ function renderImagePreviews() {
     });
   });
 
+  // Attach "Set as thumbnail" handlers
+  container.querySelectorAll('.image-preview-thumb-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var displayIndex = parseInt(this.getAttribute('data-display-index'), 10);
+      setImageAsThumbnail(displayIndex);
+    });
+  });
+
   // Attach drag-and-drop reorder
   initImageDragReorder(container);
+}
+
+// --------------------
+// Move the image at the given display index to the front (position 1) so it
+// becomes the product thumbnail. Works on the combined existing + new list,
+// then rebuilds existingImages / newFiles in the new order — the same order
+// that updateImageOrder() persists to display_order on save.
+// --------------------
+function setImageAsThumbnail(displayIndex) {
+  if (displayIndex <= 0) return; // Already the thumbnail
+
+  var deleteIds = imagesToDelete.map(function (img) { return img.id; });
+  var visibleExisting = existingImages.filter(function (img) {
+    return deleteIds.indexOf(img.id) === -1;
+  });
+
+  // Build the combined ordered list (existing first, then new) — mirrors the
+  // order shown in the previews and used by the drag-reorder logic.
+  var combined = [];
+  visibleExisting.forEach(function (img) {
+    combined.push({ type: 'existing', data: img });
+  });
+  newFiles.forEach(function (f) {
+    combined.push({ type: 'new', data: f });
+  });
+
+  if (displayIndex >= combined.length) return;
+
+  // Move the chosen item to the front.
+  var moved = combined.splice(displayIndex, 1)[0];
+  combined.unshift(moved);
+
+  // Rebuild existingImages / newFiles from the new order. Keep images marked
+  // for deletion at the end so they aren't lost from state before save.
+  var newExisting = [];
+  var newNew = [];
+  combined.forEach(function (item) {
+    if (item.type === 'existing') {
+      newExisting.push(item.data);
+    } else {
+      newNew.push(item.data);
+    }
+  });
+
+  var deletedExisting = existingImages.filter(function (img) {
+    return deleteIds.indexOf(img.id) !== -1;
+  });
+
+  existingImages = newExisting.concat(deletedExisting);
+  newFiles = newNew;
+
+  renderImagePreviews();
+  showAdminToast('Thumbnail updated. Save to apply.', 'success');
 }
 
 // --------------------
