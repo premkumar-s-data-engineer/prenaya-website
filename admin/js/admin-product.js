@@ -39,6 +39,15 @@ var optionGroupCounter = 0;
 var variantRows = [];
 
 // --------------------
+// Colour Selection State
+// --------------------
+// allPaletteColors: the master palette loaded from the colors table.
+// Each: { id, name, hex, display_order }
+var allPaletteColors = [];
+// selectedColorIds: ids of palette colours offered by this product.
+var selectedColorIds = [];
+
+// --------------------
 // Initialisation
 // --------------------
 document.addEventListener('DOMContentLoaded', async function () {
@@ -47,6 +56,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   renderAdminLayout();
   await loadCategories();
+  await loadPaletteColors();
 
   // Check if we're in edit mode
   var params = new URLSearchParams(window.location.search);
@@ -64,6 +74,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   initImageUpload();
   initFormSubmission();
   initVariantsUI();
+  initColorsUI();
   renderImagePreviews();
 });
 
@@ -130,6 +141,49 @@ async function loadProduct(productId) {
     document.getElementById('variants-section').classList.remove('hidden');
     await loadProductVariants(productId);
   }
+
+  // Load colour-selection settings
+  var colorCount = product.color_choice_count || 0;
+  if (colorCount > 0) {
+    document.getElementById('product-has-colors').checked = true;
+    document.getElementById('colors-section').classList.remove('hidden');
+    document.getElementById('product-color-count').value = colorCount;
+    await loadProductColors(productId);
+  }
+  renderColorPicker();
+}
+
+// --------------------
+// Load the master colour palette (for the picker)
+// --------------------
+async function loadPaletteColors() {
+  var { data: colors, error } = await supabaseClient
+    .from('colors')
+    .select('id, name, hex, display_order')
+    .order('display_order');
+
+  if (error) {
+    console.error('Error loading colour palette:', error);
+    allPaletteColors = [];
+    return;
+  }
+  allPaletteColors = colors || [];
+}
+
+// --------------------
+// Load which colours this product currently offers (edit mode)
+// --------------------
+async function loadProductColors(productId) {
+  var { data, error } = await supabaseClient
+    .from('product_colors')
+    .select('color_id')
+    .eq('product_id', productId);
+
+  if (error) {
+    console.error('Error loading product colours:', error);
+    return;
+  }
+  selectedColorIds = (data || []).map(function (r) { return r.color_id; });
 }
 
 // --------------------
@@ -598,6 +652,65 @@ function initVariantsUI() {
 }
 
 // --------------------
+// Colour Selection UI
+// --------------------
+function initColorsUI() {
+  var checkbox = document.getElementById('product-has-colors');
+  var section = document.getElementById('colors-section');
+
+  checkbox.addEventListener('change', function () {
+    if (this.checked) {
+      section.classList.remove('hidden');
+      renderColorPicker();
+    } else {
+      section.classList.add('hidden');
+    }
+  });
+
+  renderColorPicker();
+}
+
+// --------------------
+// Render the palette as tickable swatches
+// --------------------
+function renderColorPicker() {
+  var picker = document.getElementById('product-colors-picker');
+  if (!picker) return;
+
+  if (allPaletteColors.length === 0) {
+    picker.innerHTML = '<p class="field-hint">No colours in the palette yet. Add some on the <a href="colors.html">Colours</a> page first.</p>';
+    return;
+  }
+
+  var html = '';
+  allPaletteColors.forEach(function (color) {
+    var checked = selectedColorIds.indexOf(color.id) !== -1;
+    html += `
+      <label class="color-pick-item ${checked ? 'selected' : ''}" data-color-id="${color.id}">
+        <input type="checkbox" class="color-pick-check" value="${color.id}" ${checked ? 'checked' : ''}>
+        <span class="color-pick-swatch" style="background:${escapeAttr(color.hex)}"></span>
+        <span class="color-pick-name">${escapeHtml(color.name)}</span>
+      </label>
+    `;
+  });
+  picker.innerHTML = html;
+
+  picker.querySelectorAll('.color-pick-check').forEach(function (input) {
+    input.addEventListener('change', function () {
+      var id = this.value;
+      var item = this.closest('.color-pick-item');
+      if (this.checked) {
+        if (selectedColorIds.indexOf(id) === -1) selectedColorIds.push(id);
+        if (item) item.classList.add('selected');
+      } else {
+        selectedColorIds = selectedColorIds.filter(function (cid) { return cid !== id; });
+        if (item) item.classList.remove('selected');
+      }
+    });
+  });
+}
+
+// --------------------
 // Option Groups CRUD
 // --------------------
 function addOptionGroup() {
@@ -931,6 +1044,13 @@ async function saveProduct() {
   var isAvailable = document.getElementById('product-available').checked;
   var isFeatured = document.getElementById('product-featured').checked;
 
+  // Colour selection
+  var hasColors = document.getElementById('product-has-colors').checked;
+  var colorChoiceCount = 0;
+  if (hasColors) {
+    colorChoiceCount = parseInt(document.getElementById('product-color-count').value, 10) || 0;
+  }
+
   // Validate required fields
   if (!name) {
     showAdminToast('Product name is required.', 'error');
@@ -943,6 +1063,19 @@ async function saveProduct() {
   if (isNaN(price) || price < 0) {
     showAdminToast('Please enter a valid price.', 'error');
     return;
+  }
+
+  // Validate colour selection
+  if (hasColors) {
+    if (colorChoiceCount < 1) {
+      showAdminToast('Choose how many colours the customer can pick (at least 1).', 'error');
+      return;
+    }
+    if (selectedColorIds.length < colorChoiceCount) {
+      showAdminToast('You allow ' + colorChoiceCount + ' colour choice(s) but only offered ' +
+        selectedColorIds.length + '. Tick at least ' + colorChoiceCount + ' colours.', 'error');
+      return;
+    }
   }
 
   // Validate at least 1 image for new products
@@ -982,6 +1115,7 @@ async function saveProduct() {
       is_available: isAvailable,
       is_featured: isFeatured,
       has_variants: document.getElementById('product-has-variants').checked,
+      color_choice_count: colorChoiceCount,
     };
 
     if (isEditMode) {
@@ -1035,6 +1169,9 @@ async function saveProduct() {
       // If variants were turned off, clean up any existing variant data
       await deleteAllProductVariants(productId);
     }
+
+    // --- Save colour selection ---
+    await saveProductColors(productId, hasColors);
 
     showAdminToast(isEditMode ? 'Product updated!' : 'Product created!', 'success');
 
@@ -1287,4 +1424,42 @@ async function deleteAllProductVariants(productId) {
     .from('product_options')
     .delete()
     .eq('product_id', productId);
+}
+
+
+// ============================================================
+// COLOUR SELECTION SAVE LOGIC
+// ============================================================
+
+/**
+ * Persist which palette colours a product offers.
+ * Strategy: clear existing product_colors rows, then re-insert the current
+ * selection. If the feature is turned off, we just clear the rows (the
+ * color_choice_count = 0 on the product record disables it).
+ */
+async function saveProductColors(productId, hasColors) {
+  // Always clear existing links first.
+  await supabaseClient
+    .from('product_colors')
+    .delete()
+    .eq('product_id', productId);
+
+  if (!hasColors || selectedColorIds.length === 0) return;
+
+  var rows = selectedColorIds.map(function (colorId, idx) {
+    return {
+      product_id: productId,
+      color_id: colorId,
+      display_order: idx + 1,
+    };
+  });
+
+  var { error } = await supabaseClient
+    .from('product_colors')
+    .insert(rows);
+
+  if (error) {
+    console.error('Error saving product colours:', error);
+    showAdminToast('Failed to save colour selection.', 'error');
+  }
 }

@@ -48,6 +48,9 @@ function renderOrderSummary() {
     if (item.variantLabel) {
       itemName += ' <span class="checkout-item-variant">(' + escapeHtml(item.variantLabel) + ')</span>';
     }
+    if (item.selectedColors && item.selectedColors.length > 0) {
+      itemName += ' <span class="checkout-item-variant">[Colours: ' + escapeHtml(item.selectedColors.join(', ')) + ']</span>';
+    }
     var priceDisplay = formatPrice(lineTotal);
     if (item.compareAtPrice && item.compareAtPrice > item.price) {
       priceDisplay = '<span class="price-original-sm">' + formatPrice(item.compareAtPrice * item.quantity) + '</span> ' + formatPrice(lineTotal);
@@ -162,6 +165,9 @@ function buildWhatsAppMessage(name, phone, address, notes) {
     var lineTotal = item.price * item.quantity;
     var itemLine = (index + 1) + '. ' + item.name;
     if (item.variantLabel) itemLine += ' (' + item.variantLabel + ')';
+    if (item.selectedColors && item.selectedColors.length > 0) {
+      itemLine += ' [Colours: ' + item.selectedColors.join(', ') + ']';
+    }
     itemLine += ' \u00d7 ' + item.quantity + ' = ' + formatPrice(lineTotal);
     lines.push(itemLine);
   });

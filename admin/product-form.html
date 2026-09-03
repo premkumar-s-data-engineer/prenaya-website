@@ -126,6 +126,32 @@
       </div>
       <!-- ===================== END VARIANTS ===================== -->
 
+      <!-- ===================== CUSTOMER COLOUR SELECTION ===================== -->
+      <div class="form-group">
+        <div class="form-check" style="margin-bottom: var(--space-md);">
+          <input type="checkbox" id="product-has-colors">
+          <label for="product-has-colors">Let customers choose paint colours for this product</label>
+        </div>
+      </div>
+
+      <div id="colors-section" class="hidden">
+        <div class="form-group">
+          <label for="product-color-count">How many colours can the customer choose? *</label>
+          <input type="number" id="product-color-count" min="1" step="1" value="1" class="order-input">
+          <div class="field-hint">The customer must pick exactly this many distinct colours.</div>
+        </div>
+
+        <div class="form-group">
+          <label>Colours offered for this product</label>
+          <div class="field-hint mb-md">
+            Tick the colours customers can choose from. Manage the master palette on the
+            <a href="colors.html">Colours</a> page.
+          </div>
+          <div id="product-colors-picker" class="product-colors-picker"></div>
+        </div>
+      </div>
+      <!-- ===================== END COLOUR SELECTION ===================== -->
+
       <div class="form-group">
         <label>Product Images</label>
         <div class="field-hint mb-md">

@@ -14,7 +14,9 @@
 //   image: 'https://...public-url',
 //   variantId: 'uuid' (optional — only for variant products),
 //   selectedOptions: { Type: 'Special', Keychain: 'With' } (optional),
-//   variantLabel: 'Special / With' (optional — display string)
+//   variantLabel: 'Special / With' (optional — display string),
+//   selectedColorIds: ['uuid', ...] (optional — chosen paint colours),
+//   selectedColors: ['Yellow', 'Red'] (optional — chosen colour names)
 // }
 //
 // Requires: supabase-config.js loaded before this file (for formatPrice).
@@ -59,10 +61,18 @@ function saveBasket(items) {
  * For non-variant products, the key is just productId.
  */
 function getBasketItemKey(item) {
+  var key = item.productId;
   if (item.variantId) {
-    return item.productId + '::' + item.variantId;
+    key = item.productId + '::' + item.variantId;
   }
-  return item.productId;
+  // Fold chosen colours into the key so the same product with a different
+  // colour set is a separate basket line. Must match getCurrentBasketKey()
+  // in product.js (sorted ids).
+  if (item.selectedColorIds && item.selectedColorIds.length > 0) {
+    var sortedColors = item.selectedColorIds.slice().sort();
+    key += '::colors:' + sortedColors.join(',');
+  }
+  return key;
 }
 
 /**
@@ -101,6 +111,10 @@ function addToBasket(product) {
       newItem.variantId = product.variantId;
       newItem.selectedOptions = product.selectedOptions || {};
       newItem.variantLabel = product.variantLabel || '';
+    }
+    if (product.selectedColorIds && product.selectedColorIds.length > 0) {
+      newItem.selectedColorIds = product.selectedColorIds.slice();
+      newItem.selectedColors = (product.selectedColors || []).slice();
     }
     items.push(newItem);
   }

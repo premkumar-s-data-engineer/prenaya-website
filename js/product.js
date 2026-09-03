@@ -16,6 +16,11 @@ var productOptions = [];   // [{name, values:['Normal','Special']}, ...]
 var productVariants = [];  // [{id, combination:{...}, price, is_available}, ...]
 var selectedOptions = {};  // {Type:'Normal', Keychain:'With'}
 
+// Colour selection state
+var productColors = [];     // [{id, name, hex}, ...] offered by this product
+var colorChoiceCount = 0;   // how many colours the customer must pick (0 = off)
+var selectedColorIds = [];  // ids the customer has chosen, in click order
+
 document.addEventListener('DOMContentLoaded', function () {
   var params = new URLSearchParams(window.location.search);
   var slug = params.get('id');
@@ -74,6 +79,14 @@ async function loadProduct(slug) {
     await loadProductVariants(product.id);
   }
 
+  // Load customer colour selection if enabled
+  productColors = [];
+  colorChoiceCount = product.color_choice_count || 0;
+  selectedColorIds = [];
+  if (colorChoiceCount > 0) {
+    await loadProductColors(product.id);
+  }
+
   container.innerHTML = renderProductDetail(product, currentImages);
 
   // Initialise gallery interactions
@@ -82,6 +95,11 @@ async function loadProduct(slug) {
   // Initialise variant selectors if applicable
   if (product.has_variants && productOptions.length > 0) {
     initVariantSelectors();
+  }
+
+  // Initialise colour selectors if applicable
+  if (colorChoiceCount > 0 && productColors.length > 0) {
+    initColorSelectors();
   }
 
   // Render the cart area (Add to Cart button or stepper)
@@ -155,14 +173,25 @@ function syncCartArea() {
 // Compute the basket key for the current product + selected variant
 // --------------------
 function getCurrentBasketKey() {
+  var key = currentProduct.id;
+
   var hasVariants = currentProduct.has_variants && productOptions.length > 0;
   if (hasVariants) {
     var matched = findMatchingVariant(selectedOptions);
     if (matched) {
-      return currentProduct.id + '::' + matched.id;
+      key = currentProduct.id + '::' + matched.id;
     }
   }
-  return currentProduct.id;
+
+  // Fold the chosen colours into the key so the same product with a different
+  // colour set is treated as a separate basket line. Sorted so order of
+  // selection doesn't create duplicate lines for the same set.
+  if (colorChoiceCount > 0 && selectedColorIds.length > 0) {
+    var sortedColors = selectedColorIds.slice().sort();
+    key += '::colors:' + sortedColors.join(',');
+  }
+
+  return key;
 }
 
 // --------------------
@@ -187,6 +216,16 @@ function refreshCartArea() {
 
   var key = getCurrentBasketKey();
   var qty = getItemQuantity(key);
+
+  // If colours are required but not fully chosen, gate the Add to Cart button.
+  // (Once an item with a valid colour set is in the basket, we still show the
+  // stepper for that exact set.)
+  if (qty <= 0 && !colorSelectionComplete()) {
+    var remaining = colorChoiceCount - selectedColorIds.length;
+    area.innerHTML = '<button type="button" class="btn btn-primary add-to-basket-btn" disabled>' +
+      'Choose ' + remaining + ' more colour' + (remaining === 1 ? '' : 's') + '</button>';
+    return;
+  }
 
   if (qty <= 0) {
     area.innerHTML = '<button type="button" class="btn btn-primary add-to-basket-btn pd-add-btn">Add to Cart</button>';
@@ -244,6 +283,27 @@ async function loadProductVariants(productId) {
   }
 
   productVariants = variants;
+}
+
+// --------------------
+// Load the colours this product offers (joined with the master palette)
+// --------------------
+async function loadProductColors(productId) {
+  var { data, error } = await supabaseClient
+    .from('product_colors')
+    .select('display_order, color:colors(id, name, hex, display_order)')
+    .eq('product_id', productId)
+    .order('display_order');
+
+  if (error || !data) {
+    console.error('Error loading product colours:', error);
+    productColors = [];
+    return;
+  }
+
+  productColors = data
+    .map(function (row) { return row.color; })
+    .filter(function (c) { return c; });
 }
 
 // --------------------
@@ -316,6 +376,28 @@ function renderProductDetail(product, images) {
     variantHtml += '</div>';
   }
 
+  // Colour selector HTML
+  var colorHtml = '';
+  if (colorChoiceCount > 0 && productColors.length > 0) {
+    colorHtml = '<div class="product-colors" id="product-colors">';
+    colorHtml += '<div class="color-select-header">';
+    colorHtml += '<span class="color-select-label">Colours <span class="color-select-rule">(choose ' + colorChoiceCount + ')</span></span>';
+    colorHtml += '<span class="color-select-status" id="color-select-status">Selected 0 of ' + colorChoiceCount + '</span>';
+    colorHtml += '</div>';
+    colorHtml += '<div class="color-select-chosen" id="color-select-chosen"></div>';
+    colorHtml += '<div class="color-swatches" id="color-swatches">';
+    productColors.forEach(function (color) {
+      colorHtml += '<button type="button" class="color-swatch" ' +
+        'data-color-id="' + escapeAttr(color.id) + '" ' +
+        'data-color-name="' + escapeAttr(color.name) + '" ' +
+        'style="background:' + escapeAttr(color.hex) + '" ' +
+        'aria-label="' + escapeAttr(color.name) + '" ' +
+        'title="' + escapeAttr(color.name) + '"></button>';
+    });
+    colorHtml += '</div>';
+    colorHtml += '</div>';
+  }
+
   // Stock badge
   var stockHtml = isAvailable
     ? '<span class="stock-badge available" id="stock-badge">In Stock</span>'
@@ -343,6 +425,7 @@ function renderProductDetail(product, images) {
         ${priceHtml}
         ${shippingNoteHtml}
         ${variantHtml}
+        ${colorHtml}
         <div class="product-description">${escapeHtml(product.description || '')}</div>
         ${includesHtml}
         ${cartAreaHtml}
@@ -417,6 +500,77 @@ function findMatchingVariant(selection) {
     }
     return true;
   }) || null;
+}
+
+// --------------------
+// Colour selection logic
+// --------------------
+function initColorSelectors() {
+  var container = document.getElementById('color-swatches');
+  if (!container) return;
+
+  container.addEventListener('click', function (e) {
+    var swatch = e.target.closest('.color-swatch');
+    if (!swatch) return;
+
+    var colorId = swatch.getAttribute('data-color-id');
+    var colorName = swatch.getAttribute('data-color-name');
+    var index = selectedColorIds.indexOf(colorId);
+
+    if (index !== -1) {
+      // Already selected → deselect (distinct set stays consistent)
+      selectedColorIds.splice(index, 1);
+      swatch.classList.remove('selected');
+    } else {
+      // Not selected → only add if we're below the allowed count
+      if (selectedColorIds.length >= colorChoiceCount) {
+        showToast('You can choose exactly ' + colorChoiceCount + ' colour' +
+          (colorChoiceCount === 1 ? '' : 's') + '. Deselect one to change.', 'warning');
+        return;
+      }
+      selectedColorIds.push(colorId);
+      swatch.classList.add('selected');
+    }
+
+    updateColorSelectionUI(colorName);
+    // Re-sync the cart control (enables/disables Add to Cart based on selection)
+    refreshCartArea();
+  });
+
+  updateColorSelectionUI('');
+}
+
+// Update the "Selected X of N", the chosen-colours list, and the last name shown.
+function updateColorSelectionUI(lastName) {
+  var statusEl = document.getElementById('color-select-status');
+  if (statusEl) {
+    statusEl.textContent = 'Selected ' + selectedColorIds.length + ' of ' + colorChoiceCount;
+    statusEl.classList.toggle('complete', selectedColorIds.length === colorChoiceCount);
+  }
+
+  var chosenEl = document.getElementById('color-select-chosen');
+  if (chosenEl) {
+    if (selectedColorIds.length === 0) {
+      chosenEl.textContent = '';
+    } else {
+      var names = getSelectedColorNames();
+      chosenEl.textContent = 'Colour: ' + names.join(', ');
+    }
+  }
+}
+
+// Are the colour requirements satisfied? (feature off => always true)
+function colorSelectionComplete() {
+  if (colorChoiceCount <= 0 || productColors.length === 0) return true;
+  return selectedColorIds.length === colorChoiceCount;
+}
+
+// Names of the currently selected colours, in selection order.
+function getSelectedColorNames() {
+  return selectedColorIds.map(function (id) {
+    var c = productColors.find(function (pc) { return pc.id === id; });
+    return c ? c.name : '';
+  }).filter(function (n) { return n; });
 }
 
 // --------------------
@@ -569,6 +723,18 @@ function handleAddToBasket(product, images) {
       return selectedOptions[key];
     }).join(' / ');
     basketItem.variantLabel = optSummary;
+  }
+
+  // Attach chosen colours (if this product uses colour selection)
+  if (colorChoiceCount > 0 && productColors.length > 0) {
+    if (!colorSelectionComplete()) {
+      showToast('Please choose exactly ' + colorChoiceCount + ' colour' +
+        (colorChoiceCount === 1 ? '' : 's') + '.', 'error');
+      return;
+    }
+    // Store both ids (for a stable basket key) and names (for display).
+    basketItem.selectedColorIds = selectedColorIds.slice();
+    basketItem.selectedColors = getSelectedColorNames();
   }
 
   addToBasket(basketItem);

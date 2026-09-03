@@ -51,11 +51,11 @@ async function loadCategories() {
 async function loadFeaturedProducts() {
   var grid = document.getElementById('featured-grid');
 
+  // Show featured products even if out of stock (dimmed, non-addable).
   var { data: products, error } = await supabaseClient
     .from('products')
     .select('id, name, slug, price, compare_at_price, description, is_available, is_featured, has_variants, images:product_images(image_path, display_order)')
     .eq('is_featured', true)
-    .eq('is_available', true)
     .order('display_order');
 
   if (error) {
@@ -72,7 +72,12 @@ async function loadFeaturedProducts() {
   // Load min variant prices for products with variants
   await loadMinVariantPrices(products);
 
-  grid.innerHTML = products.map(function (product) {
+  // Show in-stock featured products first, out-of-stock last.
+  var ordered = products.slice().sort(function (a, b) {
+    return (a.is_available === false ? 1 : 0) - (b.is_available === false ? 1 : 0);
+  });
+
+  grid.innerHTML = ordered.map(function (product) {
     return renderProductCard(product);
   }).join('');
 
@@ -99,9 +104,14 @@ function renderProductCard(product) {
     priceHtml = '<p class="product-card-price">' + formatPrice(product.price) + '</p>';
   }
 
-  // Footer action: variant products link to product page; simple products get a qty stepper
+  var outOfStock = product.is_available === false;
+
+  // Footer action: out-of-stock -> disabled label; variant products link to
+  // the product page; simple products get a qty stepper.
   var footerHtml;
-  if (hasVariants) {
+  if (outOfStock) {
+    footerHtml = '<button type="button" class="btn btn-add-cart" disabled>Out of Stock</button>';
+  } else if (hasVariants) {
     footerHtml = '<a href="product.html?id=' + encodeURIComponent(product.slug) + '" class="btn btn-add-cart">View Options</a>';
   } else {
     var compareAttr = (product.compare_at_price && product.compare_at_price > product.price)
@@ -109,11 +119,16 @@ function renderProductCard(product) {
     footerHtml = '<div class="qty-control" data-id="' + product.id + '" data-slug="' + escapeAttr(product.slug) + '" data-name="' + escapeAttr(product.name) + '" data-price="' + product.price + '" data-image="' + escapeAttr(thumbnail) + '"' + compareAttr + '></div>';
   }
 
+  // When out of stock, show the OOS badge instead of the "Popular" badge.
+  var topBadge = outOfStock
+    ? '<span class="product-card-oos-badge">Out of Stock</span>'
+    : (product.is_featured ? '<span class="product-card-badge">Popular</span>' : '');
+
   return `
-    <div class="product-card" data-product-id="${product.id}">
+    <div class="product-card ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${product.id}">
       <a href="product.html?id=${encodeURIComponent(product.slug)}">
         <div class="product-card-image-wrap">
-          ${product.is_featured ? '<span class="product-card-badge">Popular</span>' : ''}
+          ${topBadge}
           <img src="${thumbnail}" alt="${escapeHtml(product.name)}" class="product-card-image" loading="lazy" decoding="async" width="300" height="300">
         </div>
       </a>

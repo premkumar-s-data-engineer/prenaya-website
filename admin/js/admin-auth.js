@@ -160,6 +160,9 @@ function renderAdminLayout() {
         <a href="categories.html" class="${currentPage === 'categories.html' ? 'active' : ''}">
           <span class="nav-icon">&#128193;</span> Categories
         </a>
+        <a href="colors.html" class="${currentPage === 'colors.html' ? 'active' : ''}">
+          <span class="nav-icon">&#127912;</span> Colours
+        </a>
         <a href="product-form.html" class="${currentPage === 'product-form.html' ? 'active' : ''}">
           <span class="nav-icon">&#10010;</span> Add Product
         </a>

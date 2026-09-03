@@ -80,6 +80,11 @@ function renderBasketItem(item) {
     variantHtml = '<div class="basket-item-variant">' + escapeHtml(item.variantLabel) + '</div>';
   }
 
+  // Chosen colours (e.g. "Colours: Yellow, Red")
+  if (item.selectedColors && item.selectedColors.length > 0) {
+    variantHtml += '<div class="basket-item-variant">Colours: ' + escapeHtml(item.selectedColors.join(', ')) + '</div>';
+  }
+
   // Price display with optional strikethrough
   var priceDisplayHtml;
   var lineTotal = item.price * item.quantity;
