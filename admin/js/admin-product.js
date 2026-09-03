@@ -657,16 +657,28 @@ function initVariantsUI() {
 function initColorsUI() {
   var checkbox = document.getElementById('product-has-colors');
   var section = document.getElementById('colors-section');
+  if (!checkbox || !section) return;
 
   checkbox.addEventListener('change', function () {
     if (this.checked) {
       section.classList.remove('hidden');
-      renderColorPicker();
+      showColorPicker();
     } else {
       section.classList.add('hidden');
     }
   });
 
+  // Render up front so the swatches exist even before the section is shown.
+  renderColorPicker();
+}
+
+// Ensure the picker is populated when the section becomes visible. If the
+// palette hasn't arrived yet (slow network / race on mobile), fetch it now
+// and then render — this prevents an empty picker after ticking the box.
+async function showColorPicker() {
+  if (allPaletteColors.length === 0) {
+    await loadPaletteColors();
+  }
   renderColorPicker();
 }
 

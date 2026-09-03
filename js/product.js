@@ -117,6 +117,17 @@ async function loadProduct(slug) {
       var addBtn = e.target.closest('.pd-add-btn');
       var plusBtn = e.target.closest('.qty-plus');
       var minusBtn = e.target.closest('.qty-minus');
+      var addAnotherBtn = e.target.closest('.pd-add-another-btn');
+
+      // "Add another colour set": clear the current selection so the customer
+      // can pick a fresh, different set and add it as a separate basket line.
+      if (addAnotherBtn) {
+        e.preventDefault();
+        clearColorSelection();
+        refreshCartArea();
+        scrollToColorSwatches();
+        return;
+      }
 
       if (!addBtn && !plusBtn && !minusBtn) return;
       e.preventDefault();
@@ -227,15 +238,30 @@ function refreshCartArea() {
     return;
   }
 
+  var isColorProduct = colorChoiceCount > 0 && productColors.length > 0;
+
   if (qty <= 0) {
     area.innerHTML = '<button type="button" class="btn btn-primary add-to-basket-btn pd-add-btn">Add to Cart</button>';
   } else {
-    area.innerHTML =
+    // This exact colour set (or variant) is already in the basket — show its
+    // stepper. For colour products, also nudge the customer that they can add
+    // the SAME product again with a DIFFERENT colour set (Option 1).
+    var stepperHtml =
       '<div class="qty-stepper qty-stepper-lg">' +
         '<button type="button" class="qty-step qty-minus" aria-label="Decrease quantity">&minus;</button>' +
         '<span class="qty-step-value">' + qty + '</span>' +
         '<button type="button" class="qty-step qty-plus" aria-label="Increase quantity">+</button>' +
       '</div>';
+
+    if (isColorProduct) {
+      stepperHtml +=
+        '<button type="button" class="btn btn-outline add-another-set-btn pd-add-another-btn">' +
+          'Add another colour set' +
+        '</button>' +
+        '<p class="color-add-hint">This colour set is in your basket. Change the colours above and tap “Add another colour set” to order a different combination.</p>';
+    }
+
+    area.innerHTML = stepperHtml;
   }
 }
 
@@ -571,6 +597,27 @@ function getSelectedColorNames() {
     var c = productColors.find(function (pc) { return pc.id === id; });
     return c ? c.name : '';
   }).filter(function (n) { return n; });
+}
+
+// Clear the current colour selection and reset the swatch UI. Used by the
+// "Add another colour set" flow so the customer can pick a fresh combination.
+function clearColorSelection() {
+  selectedColorIds = [];
+  var container = document.getElementById('color-swatches');
+  if (container) {
+    container.querySelectorAll('.color-swatch.selected').forEach(function (sw) {
+      sw.classList.remove('selected');
+    });
+  }
+  updateColorSelectionUI('');
+}
+
+// Bring the colour swatches into view so it's obvious what to do next.
+function scrollToColorSwatches() {
+  var el = document.getElementById('product-colors');
+  if (el && el.scrollIntoView) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 // --------------------
