@@ -485,6 +485,52 @@ button { cursor: pointer; font-family: inherit; font-size: inherit; border: none
 }
 
 /* ============================================================
+   CATEGORY FILTER TABS (admin product list)
+   ============================================================ */
+.admin-filter-bar {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+
+.admin-filter-bar .filter-btn {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+
+.admin-filter-bar .filter-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.admin-filter-bar .filter-btn.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* On narrow screens, scroll the tabs horizontally instead of wrapping into
+   many rows when there are lots of categories. */
+@media (max-width: 767px) {
+  .admin-filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--space-xs);
+  }
+  .admin-filter-bar .filter-btn { flex: 0 0 auto; }
+}
+
+/* ============================================================
    FORMS
    ============================================================ */
 .form-group { margin-bottom: var(--space-lg); }

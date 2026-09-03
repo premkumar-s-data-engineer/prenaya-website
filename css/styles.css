@@ -1057,16 +1057,30 @@ ul, ol { list-style: none; }
    ============================================================ */
 .basket-items { margin-bottom: var(--space-xl); }
 
+/* Mobile-first: a two-row grid so the image, details, and the
+   quantity/remove controls each get room. Image spans both rows on the left;
+   details sit top-right; quantity + remove sit on a second row underneath.
+   This prevents the congestion when colours/variants add extra lines. */
 .basket-item {
-  display: flex;
-  gap: var(--space-md);
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  grid-template-areas:
+    "image details details"
+    "image qty     remove";
+  column-gap: var(--space-md);
+  row-gap: var(--space-sm);
   padding: var(--space-md);
   background: var(--color-surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   margin-bottom: var(--space-md);
-  align-items: center;
+  align-items: start;
   border: 1px solid var(--color-border-light);
+}
+
+.basket-item > a:first-child {
+  grid-area: image;
+  align-self: center;
 }
 
 .basket-item-image {
@@ -1078,16 +1092,29 @@ ul, ol { list-style: none; }
   background: var(--color-border-light);
 }
 
-.basket-item-details { flex: 1; min-width: 0; }
+.basket-item-details {
+  grid-area: details;
+  min-width: 0;
+}
+
+/* Second row: quantity stepper on the left, Remove on the right. */
+.basket-item .quantity-controls {
+  grid-area: qty;
+  align-self: center;
+}
+.basket-item .basket-item-remove {
+  grid-area: remove;
+  justify-self: end;
+  align-self: center;
+}
 
 .basket-item-name {
   font-weight: 600;
   font-size: var(--font-size-sm);
   color: var(--color-text);
   margin-bottom: var(--space-xs);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Allow wrapping on mobile so long names + colour lists stay readable. */
+  overflow-wrap: anywhere;
 }
 
 .basket-item-price {
@@ -1374,6 +1401,26 @@ ul, ol { list-style: none; }
   .products-grid { grid-template-columns: repeat(3, 1fr); }
   .category-card { flex: 0 0 170px; }
   .trust-bar-inner { grid-template-columns: repeat(4, 1fr); }
+
+  /* On wider screens there's room for the original single-row basket layout:
+     image | details | quantity | remove. */
+  .basket-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    grid-template-areas: none;
+  }
+  .basket-item-details { flex: 1; }
+  .basket-item-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .basket-item .quantity-controls,
+  .basket-item .basket-item-remove {
+    align-self: center;
+    justify-self: auto;
+  }
 
   .hero h1 { font-size: var(--font-size-3xl); }
   .hero p { font-size: var(--font-size-lg); }

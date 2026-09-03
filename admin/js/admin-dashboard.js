@@ -6,15 +6,54 @@
 // ============================================================
 
 var allProducts = [];
+var allCategories = [];
+var activeCategory = 'all';   // 'all' | 'uncategorised' | <category id>
+var searchQuery = '';
+
+var ADMIN_CATEGORY_KEY = 'prenaya_admin_active_category';
 
 document.addEventListener('DOMContentLoaded', async function () {
   var user = await requireAdmin();
   if (!user) return;
 
   renderAdminLayout();
-  await loadProducts();
+
+  // Restore the last-used category tab so filtering survives edits/navigation.
+  try {
+    var saved = sessionStorage.getItem(ADMIN_CATEGORY_KEY);
+    if (saved) activeCategory = saved;
+  } catch (e) {}
+
   initSearch();
+
+  // Load products FIRST and render them — this is the critical content, so it
+  // must never be blocked by the (secondary) category tabs load. Then load the
+  // categories and build the filter tabs. If categories fail, products still show.
+  await loadProducts();
+  try {
+    await loadCategories();
+    renderFilterBar();
+  } catch (e) {
+    console.error('Category tabs failed to load:', e);
+  }
 });
+
+// --------------------
+// Load categories (for the filter tabs)
+// --------------------
+async function loadCategories() {
+  var { data, error } = await supabaseClient
+    .from('categories')
+    .select('id, name, display_order')
+    .order('display_order');
+
+  if (error) {
+    console.error('Error loading categories:', error);
+    allCategories = [];
+    return;
+  }
+  allCategories = data || [];
+}
 
 // --------------------
 // Load all products
@@ -41,7 +80,59 @@ async function loadProducts() {
     return;
   }
 
-  renderProductList(allProducts);
+  // Rebuild the tabs (e.g. the Uncategorised tab may need to appear/disappear)
+  // then render. applyFilters() respects the active tab + search text, so the
+  // view is preserved across reloads from actions like toggle/delete.
+  renderFilterBar();
+  applyFilters();
+}
+
+// --------------------
+// Category filter tabs
+// --------------------
+function renderFilterBar() {
+  var bar = document.getElementById('admin-filter-bar');
+  if (!bar) return;
+
+  // Only show an "Uncategorised" tab if there's at least one such product.
+  var hasUncategorised = allProducts.some(function (p) { return !p.category_id; });
+
+  // If the remembered category no longer exists, fall back to "all".
+  var validIds = allCategories.map(function (c) { return c.id; });
+  if (activeCategory !== 'all' && activeCategory !== 'uncategorised' &&
+      validIds.indexOf(activeCategory) === -1) {
+    activeCategory = 'all';
+  }
+  if (activeCategory === 'uncategorised' && !hasUncategorised) {
+    activeCategory = 'all';
+  }
+
+  var html = '<button class="filter-btn ' + (activeCategory === 'all' ? 'active' : '') +
+    '" data-category="all">All</button>';
+
+  allCategories.forEach(function (cat) {
+    html += '<button class="filter-btn ' + (activeCategory === cat.id ? 'active' : '') +
+      '" data-category="' + escapeAttr(cat.id) + '">' + escapeHtml(cat.name) + '</button>';
+  });
+
+  if (hasUncategorised) {
+    html += '<button class="filter-btn ' + (activeCategory === 'uncategorised' ? 'active' : '') +
+      '" data-category="uncategorised">Uncategorised</button>';
+  }
+
+  bar.innerHTML = html;
+
+  bar.querySelectorAll('.filter-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      activeCategory = this.getAttribute('data-category');
+      try { sessionStorage.setItem(ADMIN_CATEGORY_KEY, activeCategory); } catch (e) {}
+
+      bar.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+      this.classList.add('active');
+
+      applyFilters();
+    });
+  });
 }
 
 // --------------------
@@ -50,52 +141,70 @@ async function loadProducts() {
 function initSearch() {
   var searchInput = document.getElementById('product-search');
   var clearBtn = document.getElementById('search-clear');
-  var countEl = document.getElementById('search-count');
 
   if (!searchInput) return;
 
   searchInput.addEventListener('input', function () {
-    var query = searchInput.value.trim().toLowerCase();
+    searchQuery = searchInput.value.trim().toLowerCase();
 
-    // Show/hide clear button
-    if (query.length > 0) {
+    if (searchQuery.length > 0) {
       clearBtn.classList.add('show');
     } else {
       clearBtn.classList.remove('show');
     }
 
-    filterProducts(query);
+    applyFilters();
   });
 
   clearBtn.addEventListener('click', function () {
     searchInput.value = '';
+    searchQuery = '';
     clearBtn.classList.remove('show');
-    countEl.classList.add('hidden');
-    renderProductList(allProducts);
+    applyFilters();
     searchInput.focus();
   });
 }
 
-function filterProducts(query) {
+// --------------------
+// Combined filtering: category tab + search text
+// --------------------
+function applyFilters() {
   var countEl = document.getElementById('search-count');
 
-  if (!query) {
-    countEl.classList.add('hidden');
-    renderProductList(allProducts);
-    return;
-  }
-
   var filtered = allProducts.filter(function (p) {
-    var name = (p.name || '').toLowerCase();
-    var category = (p.category && p.category.name || '').toLowerCase();
-    return name.indexOf(query) !== -1 || category.indexOf(query) !== -1;
+    // Category tab
+    if (activeCategory === 'uncategorised') {
+      if (p.category_id) return false;
+    } else if (activeCategory !== 'all') {
+      if (p.category_id !== activeCategory) return false;
+    }
+
+    // Search text (name or category name)
+    if (searchQuery) {
+      var name = (p.name || '').toLowerCase();
+      var category = (p.category && p.category.name || '').toLowerCase();
+      if (name.indexOf(searchQuery) === -1 && category.indexOf(searchQuery) === -1) {
+        return false;
+      }
+    }
+    return true;
   });
 
-  countEl.textContent = filtered.length + ' of ' + allProducts.length + ' products';
-  countEl.classList.remove('hidden');
+  // Show a count whenever a filter is narrowing the list.
+  if (countEl) {
+    if (activeCategory !== 'all' || searchQuery) {
+      countEl.textContent = filtered.length + ' of ' + allProducts.length + ' products';
+      countEl.classList.remove('hidden');
+    } else {
+      countEl.classList.add('hidden');
+    }
+  }
+
+  if (allProducts.length === 0) return; // empty-state already shown by loadProducts
 
   if (filtered.length === 0) {
-    document.getElementById('product-list').innerHTML = '<div class="empty-state"><p>No products match your search.</p></div>';
+    document.getElementById('product-list').innerHTML =
+      '<div class="empty-state"><p>No products match this filter.</p></div>';
     return;
   }
 

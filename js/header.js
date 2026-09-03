@@ -18,7 +18,7 @@ function renderHeader() {
       <a href="index.html" class="site-logo">
         <img src="images/site/prenaya-logo.png" alt="Prenaya" class="site-logo-img">
         <div class="site-logo-info">
-          <div class="site-logo-text">${PRENAYA_CONFIG.siteName}<span class="site-logo-dot">.</span></div>
+          <div class="site-logo-text">${PRENAYA_CONFIG.siteName}</div>
           <div class="site-logo-tagline">Made with love for <em>little creators</em></div>
         </div>
       </a>

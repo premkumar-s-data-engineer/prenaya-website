@@ -20,8 +20,15 @@ document.addEventListener('DOMContentLoaded', function () {
   var loginForm = document.getElementById('login-form');
 
   if (loginForm) {
-    // If already logged in, redirect to dashboard
-    checkExistingSession();
+    // If the user was signed out due to inactivity, tell them why.
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('timeout') === '1') {
+      showLoginError('You were logged out after 60 minutes of inactivity. Please log in again.');
+    } else {
+      // Only auto-redirect to the dashboard when NOT arriving from a timeout,
+      // so the message is visible instead of bouncing straight through.
+      checkExistingSession();
+    }
 
     loginForm.addEventListener('submit', handleLogin);
   }
@@ -111,10 +118,48 @@ async function requireAdmin() {
 
 /**
  * Log out the current user and redirect to login page.
+ * @param {boolean} timedOut - true if triggered by inactivity timeout.
  */
-async function adminLogout() {
-  await supabaseClient.auth.signOut();
-  window.location.href = 'index.html';
+async function adminLogout(timedOut) {
+  try { await supabaseClient.auth.signOut(); } catch (e) {}
+  if (timedOut) {
+    // Let the login page know why the user landed there.
+    window.location.href = 'index.html?timeout=1';
+  } else {
+    window.location.href = 'index.html';
+  }
+}
+
+// --------------------
+// Inactivity Auto-Logout
+// --------------------
+// Signs the admin out after a period of no interaction. The timer resets on
+// mouse, keyboard, touch, and scroll activity.
+var INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
+var inactivityTimer = null;
+
+function initInactivityLogout() {
+  // Avoid attaching the listeners more than once if the layout re-renders.
+  if (window.__inactivityLogoutBound) {
+    resetInactivityTimer();
+    return;
+  }
+  window.__inactivityLogoutBound = true;
+
+  var events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+  events.forEach(function (evt) {
+    // passive where possible; capture so we always see the activity
+    document.addEventListener(evt, resetInactivityTimer, { passive: true, capture: true });
+  });
+
+  resetInactivityTimer();
+}
+
+function resetInactivityTimer() {
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(function () {
+    adminLogout(true);
+  }, INACTIVITY_TIMEOUT_MS);
 }
 
 // --------------------
@@ -179,6 +224,10 @@ function renderAdminLayout() {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function () { adminLogout(); });
   }
+
+  // Auto-logout after inactivity (security: sessions otherwise persist for
+  // weeks via the refresh token in localStorage).
+  initInactivityLogout();
 
   // Mobile sidebar toggle
   var toggle = document.getElementById('sidebar-toggle');
@@ -294,10 +343,14 @@ function showConfirmDialog(title, message, confirmText, confirmClass) {
 }
 
 // --------------------
-// Escape helper
+// Escape helpers (shared across all admin pages)
 // --------------------
 function escapeHtml(text) {
   var div = document.createElement('div');
   div.appendChild(document.createTextNode(text || ''));
   return div.innerHTML;
+}
+
+function escapeAttr(text) {
+  return (text || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
