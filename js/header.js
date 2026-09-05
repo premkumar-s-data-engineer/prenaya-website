@@ -166,25 +166,65 @@ function initCategoriesNav(header) {
 
 /**
  * Inject the categories into the nav after they've been fetched.
- * Replaces the skeleton placeholder with the real dropdown/accordion.
+ * A single wrapper is placed between Home and All Kits. It contains both
+ * the desktop dropdown and the mobile accordion; CSS shows the right one.
  */
 function injectCategoriesIntoNav(header, categories) {
   var currentPage = window.location.pathname.split('/').pop() || 'index.html';
+  var isCatalog = currentPage === 'catalog.html';
 
-  // Desktop: replace the placeholder <span>
-  var desktopPlaceholder = header.querySelector('.nav-categories-placeholder');
-  if (desktopPlaceholder) {
+  // ---- Build category link lists (shared by both layouts) ----
+  var categoryLinks = categories.map(function (cat) {
+    return { name: cat.name, slug: cat.slug };
+  });
+
+  var dropdownItems = categoryLinks.map(function (cat) {
+    return '<a href="catalog.html?category=' + encodeURIComponent(cat.slug) + '" class="nav-dropdown-item">' +
+      escapeHtml(cat.name) + '</a>';
+  }).join('');
+
+  var mobileItems = categoryLinks.map(function (cat) {
+    return '<a href="catalog.html?category=' + encodeURIComponent(cat.slug) + '" class="nav-mobile-cat-item">' +
+      escapeHtml(cat.name) + '</a>';
+  }).join('');
+
+  var divider = categories.length > 0 ? '<div class="nav-dropdown-divider"></div>' : '';
+  var viewAllDropdown = '<a href="catalog.html" class="nav-dropdown-item nav-dropdown-all">All Kits &rarr;</a>';
+  var viewAllMobile   = '<a href="catalog.html" class="nav-mobile-cat-item nav-mobile-cat-all">All Kits &rarr;</a>';
+
+  // ---- Single wrapper with both desktop + mobile inside ----
+  var html =
+    '<div class="nav-categories-wrap">' +
+
+      // Desktop dropdown (hidden on mobile via CSS)
+      '<div class="nav-dropdown-wrap">' +
+        '<button type="button" class="nav-dropdown-trigger' + (isCatalog ? ' active' : '') + '" aria-haspopup="true" aria-expanded="false">' +
+          'Categories' +
+          '<svg class="nav-dropdown-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="2 4 6 8 10 4"/></svg>' +
+        '</button>' +
+        '<div class="nav-dropdown" role="menu">' +
+          dropdownItems + divider + viewAllDropdown +
+        '</div>' +
+      '</div>' +
+
+      // Mobile accordion (hidden on desktop via CSS)
+      '<div class="nav-mobile-cat-wrap">' +
+        '<button type="button" class="nav-mobile-cat-trigger" aria-expanded="false">' +
+          'Categories' +
+          '<svg class="nav-mobile-cat-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="2 4 6 8 10 4"/></svg>' +
+        '</button>' +
+        '<div class="nav-mobile-cat-list" hidden>' +
+          mobileItems + divider + viewAllMobile +
+        '</div>' +
+      '</div>' +
+
+    '</div>';
+
+  var placeholder = header.querySelector('.nav-categories-placeholder');
+  if (placeholder) {
     var tempDiv = document.createElement('div');
-    tempDiv.innerHTML = buildCategoriesDropdown(categories, currentPage);
-    desktopPlaceholder.replaceWith(tempDiv.firstElementChild);
-  }
-
-  // Mobile: replace the placeholder <span>
-  var mobilePlaceholder = header.querySelector('.nav-mobile-categories-placeholder');
-  if (mobilePlaceholder) {
-    var tempDivM = document.createElement('div');
-    tempDivM.innerHTML = buildMobileCategoriesAccordion(categories);
-    mobilePlaceholder.replaceWith(tempDivM.firstElementChild);
+    tempDiv.innerHTML = html;
+    placeholder.replaceWith(tempDiv.firstElementChild);
   }
 
   initCategoriesNav(header);
@@ -215,10 +255,6 @@ function renderHeader() {
         <a href="catalog.html" class="${currentPage === 'catalog.html' ? 'active' : ''}">All Kits</a>
         <a href="about.html" class="${currentPage === 'about.html' ? 'active' : ''}">About Us</a>
         <a href="contact.html" class="${currentPage === 'contact.html' ? 'active' : ''}">Contact Us</a>
-
-        <div class="nav-mobile-only">
-          <span class="nav-mobile-categories-placeholder"></span>
-        </div>
       </nav>
 
       <div class="header-icons">

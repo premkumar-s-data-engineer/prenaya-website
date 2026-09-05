@@ -266,6 +266,16 @@ ul, ol { list-style: none; }
    CATEGORIES DROPDOWN (desktop) & ACCORDION (mobile)
    ============================================================ */
 
+/*
+ * .nav-categories-wrap sits inline between "Home" and "All Kits".
+ * It holds two children:
+ *   .nav-dropdown-wrap  — desktop hover dropdown (hidden on mobile)
+ *   .nav-mobile-cat-wrap — mobile tap accordion  (hidden on desktop)
+ */
+.nav-categories-wrap {
+  display: contents; /* transparent in the flex row — children behave as direct flex items */
+}
+
 /* Hide the mobile-only block on desktop */
 .nav-mobile-only { display: none; }
 
@@ -363,9 +373,10 @@ ul, ol { list-style: none; }
 }
 
 /* ---- Mobile accordion ---- */
-/* Only shown inside .nav-mobile-only, which is hidden on desktop */
+/* Hidden on desktop; shown inside the nav on mobile (≤899px) */
 
 .nav-mobile-cat-wrap {
+  display: none; /* overridden to block in the mobile media query */
   width: 100%;
 }
 
@@ -430,10 +441,13 @@ ul, ol { list-style: none; }
 
 /* ---- Responsive overrides ---- */
 @media (max-width: 899px) {
-  /* Desktop dropdown: hide on mobile (accordion takes over) */
+  /* Desktop dropdown: hidden on mobile (accordion takes over) */
   .nav-dropdown-wrap { display: none; }
 
-  /* Show the mobile-only block */
+  /* Mobile accordion: shown on mobile, full width */
+  .nav-mobile-cat-wrap { display: block; width: 100%; }
+
+  /* Show the mobile-only block (legacy, kept for safety) */
   .nav-mobile-only { display: block; width: 100%; }
 }
 
