@@ -7,6 +7,7 @@
 
 document.addEventListener('DOMContentLoaded', function () {
   loadCategories();
+  loadNewArrivals();
   loadFeaturedProducts();
 });
 
@@ -43,6 +44,46 @@ async function loadCategories() {
       </a>
     `;
   }).join('');
+}
+
+// --------------------
+// New Arrivals
+// --------------------
+async function loadNewArrivals() {
+  var grid = document.getElementById('new-arrivals-grid');
+  if (!grid) return;
+
+  var { data: products, error } = await supabaseClient
+    .from('products')
+    .select('id, name, slug, price, compare_at_price, description, is_available, is_featured, is_new, has_variants, images:product_images(image_path, display_order)')
+    .eq('is_new', true)
+    .order('display_order');
+
+  if (error) {
+    grid.innerHTML = '';
+    console.error('Error loading new arrivals:', error);
+    return;
+  }
+
+  if (!products || products.length === 0) {
+    // Hide the whole section cleanly when no products are marked as new
+    var section = grid.closest('section');
+    if (section) section.style.display = 'none';
+    return;
+  }
+
+  await loadMinVariantPrices(products);
+
+  // In-stock first, OOS last
+  var ordered = products.slice().sort(function (a, b) {
+    return (a.is_available === false ? 1 : 0) - (b.is_available === false ? 1 : 0);
+  });
+
+  grid.innerHTML = ordered.map(function (product) {
+    return renderProductCard(product, true);
+  }).join('');
+
+  setupQtyControls(grid);
 }
 
 // --------------------
@@ -88,7 +129,7 @@ async function loadFeaturedProducts() {
 // --------------------
 // Product card
 // --------------------
-function renderProductCard(product) {
+function renderProductCard(product, isNewArrival) {
   var thumbnail = getProductThumbnail(product);
   var shortDesc = (product.description || '').substring(0, 80);
   var hasVariants = product.has_variants && product.minVariantPrice != null;
@@ -122,7 +163,9 @@ function renderProductCard(product) {
   // When out of stock, show the OOS badge instead of the "Popular" badge.
   var topBadge = outOfStock
     ? '<span class="product-card-oos-badge">Out of Stock</span>'
-    : (product.is_featured ? '<span class="product-card-badge">Popular</span>' : '');
+    : (isNewArrival
+        ? '<span class="product-card-badge product-card-badge-new">New</span>'
+        : (product.is_featured ? '<span class="product-card-badge">Popular</span>' : ''));
 
   return `
     <div class="product-card ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${product.id}">

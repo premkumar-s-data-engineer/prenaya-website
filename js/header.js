@@ -6,6 +6,190 @@
 // Requires: supabase-config.js, basket.js loaded before this.
 // ============================================================
 
+// Cache for categories so we only fetch once per page load.
+var _headerCategories = null;
+
+/**
+ * Fetch categories from Supabase (cached after first call).
+ * @returns {Promise<Array>}
+ */
+async function fetchNavCategories() {
+  if (_headerCategories !== null) return _headerCategories;
+  try {
+    var { data, error } = await supabaseClient
+      .from('categories')
+      .select('id, name, slug')
+      .order('display_order');
+    _headerCategories = (error || !data) ? [] : data;
+  } catch (e) {
+    _headerCategories = [];
+  }
+  return _headerCategories;
+}
+
+/**
+ * Build the Categories dropdown HTML for the desktop nav.
+ * @param {Array} categories
+ * @param {string} currentPage
+ * @returns {string}
+ */
+function buildCategoriesDropdown(categories, currentPage) {
+  var isCatalog = currentPage === 'catalog.html';
+
+  // Build each category item
+  var items = categories.map(function (cat) {
+    return '<a href="catalog.html?category=' + encodeURIComponent(cat.slug) + '" class="nav-dropdown-item">' +
+      escapeHtml(cat.name) +
+    '</a>';
+  }).join('');
+
+  // Fallback row that goes to the full catalog
+  var viewAll = '<a href="catalog.html" class="nav-dropdown-item nav-dropdown-all">All Kits &rarr;</a>';
+
+  return (
+    '<div class="nav-dropdown-wrap">' +
+      '<button type="button" class="nav-dropdown-trigger' + (isCatalog ? ' active' : '') + '" aria-haspopup="true" aria-expanded="false">' +
+        'Categories' +
+        '<svg class="nav-dropdown-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="2 4 6 8 10 4"/></svg>' +
+      '</button>' +
+      '<div class="nav-dropdown" role="menu">' +
+        items +
+        (categories.length > 0 ? '<div class="nav-dropdown-divider"></div>' : '') +
+        viewAll +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/**
+ * Build the mobile categories accordion HTML.
+ * @param {Array} categories
+ * @returns {string}
+ */
+function buildMobileCategoriesAccordion(categories) {
+  var items = categories.map(function (cat) {
+    return '<a href="catalog.html?category=' + encodeURIComponent(cat.slug) + '" class="nav-mobile-cat-item">' +
+      escapeHtml(cat.name) +
+    '</a>';
+  }).join('');
+
+  var viewAll = '<a href="catalog.html" class="nav-mobile-cat-item nav-mobile-cat-all">All Kits &rarr;</a>';
+
+  return (
+    '<div class="nav-mobile-cat-wrap">' +
+      '<button type="button" class="nav-mobile-cat-trigger" aria-expanded="false">' +
+        'Categories' +
+        '<svg class="nav-mobile-cat-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="2 4 6 8 10 4"/></svg>' +
+      '</button>' +
+      '<div class="nav-mobile-cat-list" hidden>' +
+        items +
+        (categories.length > 0 ? '<div class="nav-dropdown-divider"></div>' : '') +
+        viewAll +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/**
+ * Wire up the desktop dropdown hover/focus behaviour and the mobile accordion.
+ * Called after the nav HTML is injected into the DOM.
+ */
+function initCategoriesNav(header) {
+  // ---- Desktop dropdown ----
+  var wrap = header.querySelector('.nav-dropdown-wrap');
+  var trigger = header.querySelector('.nav-dropdown-trigger');
+  var dropdown = header.querySelector('.nav-dropdown');
+
+  if (wrap && trigger && dropdown) {
+    // Open on mouse enter, close on mouse leave (desktop hover)
+    wrap.addEventListener('mouseenter', function () {
+      dropdown.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+    });
+    wrap.addEventListener('mouseleave', function () {
+      dropdown.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+    });
+
+    // Also toggle on click/keyboard (accessibility)
+    trigger.addEventListener('click', function () {
+      var isOpen = dropdown.classList.toggle('open');
+      trigger.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    // Close when a category link is clicked
+    dropdown.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        dropdown.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    // Close on outside click
+    document.addEventListener('click', function (e) {
+      if (!wrap.contains(e.target)) {
+        dropdown.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  // ---- Mobile accordion ----
+  var mobTrigger = header.querySelector('.nav-mobile-cat-trigger');
+  var mobList = header.querySelector('.nav-mobile-cat-list');
+
+  if (mobTrigger && mobList) {
+    mobTrigger.addEventListener('click', function () {
+      var isOpen = mobList.hasAttribute('hidden') === false;
+      if (isOpen) {
+        mobList.setAttribute('hidden', '');
+        mobTrigger.setAttribute('aria-expanded', 'false');
+        mobTrigger.classList.remove('open');
+      } else {
+        mobList.removeAttribute('hidden');
+        mobTrigger.setAttribute('aria-expanded', 'true');
+        mobTrigger.classList.add('open');
+      }
+    });
+
+    // Navigating to a category closes the whole mobile nav
+    mobList.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        var navLinks = header.querySelector('#nav-links');
+        var toggle = header.querySelector('.nav-toggle');
+        if (navLinks) navLinks.classList.remove('open');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+}
+
+/**
+ * Inject the categories into the nav after they've been fetched.
+ * Replaces the skeleton placeholder with the real dropdown/accordion.
+ */
+function injectCategoriesIntoNav(header, categories) {
+  var currentPage = window.location.pathname.split('/').pop() || 'index.html';
+
+  // Desktop: replace the placeholder <span>
+  var desktopPlaceholder = header.querySelector('.nav-categories-placeholder');
+  if (desktopPlaceholder) {
+    var tempDiv = document.createElement('div');
+    tempDiv.innerHTML = buildCategoriesDropdown(categories, currentPage);
+    desktopPlaceholder.replaceWith(tempDiv.firstElementChild);
+  }
+
+  // Mobile: replace the placeholder <span>
+  var mobilePlaceholder = header.querySelector('.nav-mobile-categories-placeholder');
+  if (mobilePlaceholder) {
+    var tempDivM = document.createElement('div');
+    tempDivM.innerHTML = buildMobileCategoriesAccordion(categories);
+    mobilePlaceholder.replaceWith(tempDivM.firstElementChild);
+  }
+
+  initCategoriesNav(header);
+}
+
 function renderHeader() {
   var header = document.getElementById('site-header');
   if (!header) return;
@@ -27,9 +211,14 @@ function renderHeader() {
 
       <nav class="nav-links" id="nav-links">
         <a href="index.html" class="${currentPage === 'index.html' ? 'active' : ''}">Home</a>
+        <span class="nav-categories-placeholder"></span>
         <a href="catalog.html" class="${currentPage === 'catalog.html' ? 'active' : ''}">All Kits</a>
         <a href="about.html" class="${currentPage === 'about.html' ? 'active' : ''}">About Us</a>
         <a href="contact.html" class="${currentPage === 'contact.html' ? 'active' : ''}">Contact Us</a>
+
+        <div class="nav-mobile-only">
+          <span class="nav-mobile-categories-placeholder"></span>
+        </div>
       </nav>
 
       <div class="header-icons">
@@ -69,6 +258,18 @@ function renderHeader() {
       window.location.href = 'catalog.html';
     });
   }
+
+  // Fetch categories and inject into nav asynchronously
+  fetchNavCategories().then(function (categories) {
+    injectCategoriesIntoNav(header, categories);
+  });
+}
+
+// Simple HTML escape used in header nav building
+function escapeHtml(text) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(text)));
+  return div.innerHTML;
 }
 
 function updateBasketBadge() {

@@ -263,6 +263,181 @@ ul, ol { list-style: none; }
 }
 
 /* ============================================================
+   CATEGORIES DROPDOWN (desktop) & ACCORDION (mobile)
+   ============================================================ */
+
+/* Hide the mobile-only block on desktop */
+.nav-mobile-only { display: none; }
+
+/* ---- Desktop dropdown wrapper ---- */
+.nav-dropdown-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The "Categories" trigger button — styled identically to the nav <a> links */
+.nav-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text);
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.nav-dropdown-trigger:hover,
+.nav-dropdown-trigger.active {
+  color: var(--color-primary);
+  background: var(--color-pink-soft);
+}
+
+/* Chevron rotates when open */
+.nav-dropdown-chevron {
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+
+.nav-dropdown-trigger[aria-expanded="true"] .nav-dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+/* The dropdown panel */
+.nav-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  padding: var(--space-xs) 0;
+  /* Slight fade-in */
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.nav-dropdown.open {
+  display: block;
+  opacity: 1;
+}
+
+/* Individual category links inside the dropdown */
+.nav-dropdown-item {
+  display: block;
+  padding: var(--space-sm) var(--space-lg);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  transition: background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+
+.nav-dropdown-item:hover {
+  background: var(--color-pink-soft);
+  color: var(--color-primary);
+}
+
+/* "All Kits →" row at the bottom of the dropdown */
+.nav-dropdown-all {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.nav-dropdown-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: var(--space-xs) 0;
+}
+
+/* ---- Mobile accordion ---- */
+/* Only shown inside .nav-mobile-only, which is hidden on desktop */
+
+.nav-mobile-cat-wrap {
+  width: 100%;
+}
+
+.nav-mobile-cat-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text);
+  font-weight: 500;
+  font-size: var(--font-size-base);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+
+.nav-mobile-cat-trigger:hover,
+.nav-mobile-cat-trigger.open {
+  color: var(--color-primary);
+  background: var(--color-pink-soft);
+}
+
+.nav-mobile-cat-chevron {
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+
+.nav-mobile-cat-trigger.open .nav-mobile-cat-chevron {
+  transform: rotate(180deg);
+}
+
+/* The expandable list of categories */
+.nav-mobile-cat-list {
+  padding-left: var(--space-md);
+  border-left: 2px solid var(--color-border);
+  margin: var(--space-xs) var(--space-md) var(--space-xs) var(--space-lg);
+}
+
+.nav-mobile-cat-item {
+  display: block;
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+
+.nav-mobile-cat-item:hover {
+  color: var(--color-primary);
+  background: var(--color-pink-soft);
+}
+
+.nav-mobile-cat-all {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* ---- Responsive overrides ---- */
+@media (max-width: 899px) {
+  /* Desktop dropdown: hide on mobile (accordion takes over) */
+  .nav-dropdown-wrap { display: none; }
+
+  /* Show the mobile-only block */
+  .nav-mobile-only { display: block; width: 100%; }
+}
+
+/* ============================================================
    FOOTER
    ============================================================ */
 .site-footer {
@@ -765,6 +940,11 @@ ul, ol { list-style: none; }
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+/* "New" badge — teal/secondary colour to stand out from the coral "Popular" badge */
+.product-card-badge-new {
+  background: var(--color-secondary);
 }
 
 /* ---- Out-of-stock product cards ---- */
@@ -1654,6 +1834,101 @@ ul, ol { list-style: none; }
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin-left: var(--space-sm);
+}
+
+/* ============================================================
+   BASKET — OUT OF STOCK ITEM STATE
+   ============================================================ */
+.basket-item-oos {
+  opacity: 0.6;
+  filter: grayscale(0.4);
+}
+
+.basket-item-oos .basket-item-image {
+  filter: grayscale(0.5);
+}
+
+.basket-item-oos-badge {
+  display: inline-block;
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  align-self: center;
+}
+
+.basket-oos-warning {
+  background: rgba(231, 76, 60, 0.08);
+  border: 1px solid rgba(231, 76, 60, 0.25);
+  color: var(--color-error);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+}
+
+.basket-loading {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ============================================================
+   PRODUCT DETAIL — CUSTOM NAME INPUT
+   ============================================================ */
+.product-custom-name {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-pink-soft);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+
+.custom-name-label {
+  display: block;
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+}
+
+.custom-name-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.custom-name-input {
+  font-family: var(--font-family);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  width: 140px;
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.custom-name-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(217, 79, 122, 0.12);
+}
+
+.custom-name-input::placeholder {
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--color-text-muted);
 }
 
 

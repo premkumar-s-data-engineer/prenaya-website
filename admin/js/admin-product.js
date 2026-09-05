@@ -127,6 +127,8 @@ async function loadProduct(productId) {
   document.getElementById('product-includes').value = product.whats_included || '';
   document.getElementById('product-available').checked = product.is_available;
   document.getElementById('product-featured').checked = product.is_featured;
+  document.getElementById('product-new').checked = product.is_new || false;
+  document.getElementById('product-custom-name-chars').value = product.custom_name_max_chars || 0;
 
   // Load existing images
   existingImages = (product.images || []).slice().sort(function (a, b) {
@@ -1055,6 +1057,8 @@ async function saveProduct() {
   var whatsIncluded = document.getElementById('product-includes').value.trim();
   var isAvailable = document.getElementById('product-available').checked;
   var isFeatured = document.getElementById('product-featured').checked;
+  var isNew = document.getElementById('product-new').checked;
+  var customNameMaxChars = Math.min(6, Math.max(0, parseInt(document.getElementById('product-custom-name-chars').value, 10) || 0));
 
   // Colour selection
   var hasColors = document.getElementById('product-has-colors').checked;
@@ -1126,8 +1130,10 @@ async function saveProduct() {
       whats_included: whatsIncluded,
       is_available: isAvailable,
       is_featured: isFeatured,
+      is_new: isNew,
       has_variants: document.getElementById('product-has-variants').checked,
       color_choice_count: colorChoiceCount,
+      custom_name_max_chars: customNameMaxChars,
     };
 
     if (isEditMode) {

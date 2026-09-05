@@ -21,6 +21,10 @@ var productColors = [];     // [{id, name, hex}, ...] offered by this product
 var colorChoiceCount = 0;   // how many colours the customer must pick (0 = off)
 var selectedColorIds = [];  // ids the customer has chosen, in click order
 
+// Custom name state
+var customNameMaxChars = 0;   // 0 = feature off; 1-6 = on, with that char limit
+var currentCustomName = '';   // the name the customer has typed
+
 document.addEventListener('DOMContentLoaded', function () {
   var params = new URLSearchParams(window.location.search);
   var slug = params.get('id');
@@ -87,6 +91,10 @@ async function loadProduct(slug) {
     await loadProductColors(product.id);
   }
 
+  // Custom name personalisation
+  customNameMaxChars = Math.min(6, Math.max(0, parseInt(product.custom_name_max_chars, 10) || 0));
+  currentCustomName = '';
+
   container.innerHTML = renderProductDetail(product, currentImages);
 
   // Initialise gallery interactions
@@ -100,6 +108,11 @@ async function loadProduct(slug) {
   // Initialise colour selectors if applicable
   if (colorChoiceCount > 0 && productColors.length > 0) {
     initColorSelectors();
+  }
+
+  // Initialise custom name input if applicable
+  if (customNameMaxChars > 0) {
+    initCustomNameInput();
   }
 
   // Render the cart area (Add to Cart button or stepper)
@@ -161,8 +174,12 @@ function syncCartArea() {
   var isAvailable = currentProduct.is_available;
   var hasVariants = currentProduct.has_variants && productOptions.length > 0;
   if (hasVariants) {
-    var matched = findMatchingVariant(selectedOptions);
-    isAvailable = matched ? matched.is_available : false;
+    if (!currentProduct.is_available) {
+      isAvailable = false;
+    } else {
+      var matched = findMatchingVariant(selectedOptions);
+      isAvailable = matched ? matched.is_available : false;
+    }
   }
 
   var qty = isAvailable ? getItemQuantity(getCurrentBasketKey()) : 0;
@@ -202,6 +219,12 @@ function getCurrentBasketKey() {
     key += '::colors:' + sortedColors.join(',');
   }
 
+  // Fold the custom name into the key so the same product with a different
+  // name is a separate basket line (matches getBasketItemKey in basket.js).
+  if (customNameMaxChars > 0 && currentCustomName.trim()) {
+    key += '::name:' + currentCustomName.trim().toLowerCase();
+  }
+
   return key;
 }
 
@@ -216,8 +239,14 @@ function refreshCartArea() {
   var isAvailable = currentProduct.is_available;
 
   if (hasVariants) {
-    var matched = findMatchingVariant(selectedOptions);
-    isAvailable = matched ? matched.is_available : false;
+    // Product-level OOS overrides everything — no variant can be available
+    // if the admin has marked the whole product out of stock.
+    if (!currentProduct.is_available) {
+      isAvailable = false;
+    } else {
+      var matched = findMatchingVariant(selectedOptions);
+      isAvailable = matched ? matched.is_available : false;
+    }
   }
 
   if (!isAvailable) {
@@ -235,6 +264,12 @@ function refreshCartArea() {
     var remaining = colorChoiceCount - selectedColorIds.length;
     area.innerHTML = '<button type="button" class="btn btn-primary add-to-basket-btn" disabled>' +
       'Choose ' + remaining + ' more colour' + (remaining === 1 ? '' : 's') + '</button>';
+    return;
+  }
+
+  // If a custom name is required but not yet entered, gate the button.
+  if (qty <= 0 && customNameMaxChars > 0 && !currentCustomName.trim()) {
+    area.innerHTML = '<button type="button" class="btn btn-primary add-to-basket-btn" disabled>Enter a name above to continue</button>';
     return;
   }
 
@@ -424,6 +459,28 @@ function renderProductDetail(product, images) {
     colorHtml += '</div>';
   }
 
+  // Custom name input HTML (rendered only when custom_name_max_chars > 0)
+  var customNameHtml = '';
+  if (product.custom_name_max_chars > 0) {
+    var maxChars = Math.min(6, Math.max(1, parseInt(product.custom_name_max_chars, 10) || 6));
+    customNameHtml = `
+      <div class="product-custom-name" id="product-custom-name">
+        <label class="custom-name-label" for="custom-name-input">Personalise: Enter a name</label>
+        <div class="custom-name-field">
+          <input
+            type="text"
+            id="custom-name-input"
+            class="custom-name-input"
+            maxlength="${maxChars}"
+            placeholder="e.g. AMY"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+      </div>
+    `;
+  }
+
   // Stock badge
   var stockHtml = isAvailable
     ? '<span class="stock-badge available" id="stock-badge">In Stock</span>'
@@ -452,6 +509,7 @@ function renderProductDetail(product, images) {
         ${shippingNoteHtml}
         ${variantHtml}
         ${colorHtml}
+        ${customNameHtml}
         <div class="product-description">${escapeHtml(product.description || '')}</div>
         ${includesHtml}
         ${cartAreaHtml}
@@ -495,6 +553,16 @@ function updateVariantDisplay() {
 
   var priceWrap = document.getElementById('product-price-wrap');
   var stockEl = document.getElementById('stock-badge');
+
+  // Product-level OOS takes precedence — no variant can be in-stock
+  // if the admin has marked the whole product out of stock.
+  if (!currentProduct.is_available) {
+    priceWrap.innerHTML = renderPriceHtml(currentProduct.price, currentProduct.compare_at_price);
+    stockEl.className = 'stock-badge out-of-stock';
+    stockEl.textContent = 'Out of Stock';
+    refreshCartArea();
+    return;
+  }
 
   if (matchedVariant) {
     priceWrap.innerHTML = renderPriceHtml(matchedVariant.price, matchedVariant.compare_at_price);
@@ -618,6 +686,23 @@ function scrollToColorSwatches() {
   if (el && el.scrollIntoView) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
+}
+
+// --------------------
+// Custom name input logic
+// --------------------
+function initCustomNameInput() {
+  var input = document.getElementById('custom-name-input');
+  if (!input) return;
+
+  input.addEventListener('input', function () {
+    // Strip anything that isn't a letter; enforce the admin-set limit
+    var raw = this.value.replace(/[^a-zA-Z]/g, '').substring(0, customNameMaxChars);
+    this.value = raw;
+    currentCustomName = raw;
+    // Re-sync the cart button (enables once name is entered)
+    refreshCartArea();
+  });
 }
 
 // --------------------
@@ -782,6 +867,16 @@ function handleAddToBasket(product, images) {
     // Store both ids (for a stable basket key) and names (for display).
     basketItem.selectedColorIds = selectedColorIds.slice();
     basketItem.selectedColors = getSelectedColorNames();
+  }
+
+  // Attach custom name (if this product requires personalisation)
+  if (customNameMaxChars > 0) {
+    var trimmedName = currentCustomName.trim();
+    if (!trimmedName) {
+      showToast('Please enter a name before adding to cart.', 'error');
+      return;
+    }
+    basketItem.customName = trimmedName.substring(0, customNameMaxChars);
   }
 
   addToBasket(basketItem);

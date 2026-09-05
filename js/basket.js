@@ -16,7 +16,8 @@
 //   selectedOptions: { Type: 'Special', Keychain: 'With' } (optional),
 //   variantLabel: 'Special / With' (optional — display string),
 //   selectedColorIds: ['uuid', ...] (optional — chosen paint colours),
-//   selectedColors: ['Yellow', 'Red'] (optional — chosen colour names)
+//   selectedColors: ['Yellow', 'Red'] (optional — chosen colour names),
+//   customName: 'AMY' (optional — personalisation name, max 6 chars)
 // }
 //
 // Requires: supabase-config.js loaded before this file (for formatPrice).
@@ -72,6 +73,11 @@ function getBasketItemKey(item) {
     var sortedColors = item.selectedColorIds.slice().sort();
     key += '::colors:' + sortedColors.join(',');
   }
+  // Fold the custom name so the same product with a different name is a
+  // separate basket line. Trimmed + lowercased for consistency.
+  if (item.customName && item.customName.trim()) {
+    key += '::name:' + item.customName.trim().toLowerCase();
+  }
   return key;
 }
 
@@ -115,6 +121,9 @@ function addToBasket(product) {
     if (product.selectedColorIds && product.selectedColorIds.length > 0) {
       newItem.selectedColorIds = product.selectedColorIds.slice();
       newItem.selectedColors = (product.selectedColors || []).slice();
+    }
+    if (product.customName && product.customName.trim()) {
+      newItem.customName = product.customName.trim().substring(0, 6);
     }
     items.push(newItem);
   }
