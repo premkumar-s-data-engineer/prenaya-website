@@ -1676,7 +1676,16 @@ ul, ol { list-style: none; }
   }
 
   .nav-links.open { display: flex; }
-  .nav-links a { padding: var(--space-sm) var(--space-md); font-size: var(--font-size-base); }
+  .nav-links a {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-base);
+    text-align: left;
+  }
+
+  /* Align all nav items to the left in the mobile dropdown */
+  .nav-links {
+    align-items: stretch;
+  }
 
   .header-inner { gap: var(--space-sm); }
 }
